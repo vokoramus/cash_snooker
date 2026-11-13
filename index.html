@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snooker 42 — Кумулятивный Снукер</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h2>🎱 SNOOKER 42 (Кумулятивный Снукер)</h2>
+  <div id="status">Ход Игрока 1. Поставьте биток в секторе D или тяните для удара.</div>
+
+  <div class="hud">
+    <div id="p1-box" class="player-box active-turn">
+      <div><strong>Игрок 1</strong> | Счёт: <span id="p1-score">0</span> | Долг: <span id="p1-debt">0</span></div>
+      <div>Полка красных (<span id="p1-reds-count">0</span>): <div id="p1-reds" class="shelf"></div></div>
+      <div>Купленные цветные: <div id="p1-colors" class="shelf"></div></div>
+    </div>
+    <div id="p2-box" class="player-box">
+      <div><strong>Игрок 2</strong> | Счёт: <span id="p2-score">0</span> | Долг: <span id="p2-debt">0</span></div>
+      <div>Полка красных (<span id="p2-reds-count">0</span>): <div id="p2-reds" class="shelf"></div></div>
+      <div>Купленные цветные: <div id="p2-colors" class="shelf"></div></div>
+    </div>
+  </div>
+
+  <div class="controls" id="buy-buttons">
+    <span>Купить шар:</span>
+    <button style="background:#d4af37;color:#000" onclick="buyColor('yellow')" id="btn-yellow">Жёлтый (2)</button>
+    <button style="background:#2e7d32" onclick="buyColor('green')" id="btn-green">Зелёный (3)</button>
+    <button style="background:#6d4c41" onclick="buyColor('brown')" id="btn-brown">Коричневый (4)</button>
+    <button style="background:#1565c0" onclick="buyColor('blue')" id="btn-blue">Синий (5)</button>
+    <button style="background:#d81b60" onclick="buyColor('pink')" id="btn-pink">Розовый (6)</button>
+    <button style="background:#111;border:1px solid #555" onclick="buyColor('black')" id="btn-black">Чёрный (7)</button>
+    <button style="background:#455a64;margin-left:15px" onclick="resetGame()">Новая партия</button>
+  </div>
+
+  <canvas id="table" width="800" height="400"></canvas>
+
+  <script src="physics.js"></script>
+  <script src="game.js"></script>
+  <script src="render.js"></script>
+</body>
+</html>
