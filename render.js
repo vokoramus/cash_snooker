@@ -3,9 +3,10 @@ const ctx = canvas.getContext('2d');
 
 let isAiming = false;
 let aimEnd = { x: 0, y: 0 };
+const CANCEL_RADIUS = R + 5; // Радиус возврата к битку для отмены удара
 
 function updateUI() {
-  [0, 1].forEach(i => {
+  for (let i = 0; i < 2; i++) {
     document.getElementById(`p${i + 1}-score`).innerText = getScore(i);
     document.getElementById(`p${i + 1}-debt`).innerText = players[i].debt;
     let limitText = hasActiveColors() ? `${players[i].reds}/8` : `${players[i].reds} (без лимита)`;
@@ -24,7 +25,7 @@ function updateUI() {
     });
 
     document.getElementById(`p${i + 1}-box`).className = `player-box ${turn === i ? 'active-turn' : ''}`;
-  });
+  }
 
   let curP = players[turn];
   for (let key in COLORS_DATA) {
@@ -106,7 +107,7 @@ function drawBounceRay(startX, startY, dirX, dirY, color, maxLen, dashPattern) {
   ctx.save();
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
-  ctx.setLineDash(dashPattern || [6, 4]);
+  ctx.setLineDash(dashPattern || []);
 
   if (tWall >= maxLen) {
     ctx.beginPath();
@@ -193,94 +194,112 @@ function draw() {
     let dx = cue.x - aimEnd.x;
     let dy = cue.y - aimEnd.y;
     let dist = Math.hypot(dx, dy);
-    let power = Math.min(dist, 180);
-    let angle = Math.atan2(dy, dx);
-    const dirX = Math.cos(angle);
-    const dirY = Math.sin(angle);
 
-    const aimInfo = traceAim(cue, angle);
+    // Зона отмены прицела при возврате к битку
+    if (dist <= CANCEL_RADIUS) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 82, 82, 0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.arc(cue.x, cue.y, CANCEL_RADIUS + 4, 0, Math.PI * 2);
+      ctx.stroke();
 
-    // 1. Линия пути битка до точки касания
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(cue.x, cue.y);
-    ctx.lineTo(aimInfo.ghostX, aimInfo.ghostY);
-    ctx.stroke();
-    ctx.restore();
-
-    // 2. Призрачный биток в точке касания
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(aimInfo.ghostX, aimInfo.ghostY, R, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-
-    // 3. Траектория прицельного шара и отскок битка после соударения
-    if (aimInfo.hitBall) {
-      const target = aimInfo.hitBall;
-      const nx = target.x - aimInfo.ghostX;
-      const ny = target.y - aimInfo.ghostY;
-      const len = Math.hypot(nx, ny);
-      if (len > 0) {
-        const ux = nx / len;
-        const uy = ny / len;
-        const isLegal = boughtColor
-          ? target.type === boughtColor
-          : target.type === 'red';
-
-        drawBounceRay(
-          target.x,
-          target.y,
-          ux,
-          uy,
-          isLegal ? '#00e676' : '#ff5252',
-          500,
-          [6, 4]
-        );
-
-        let tx = -uy;
-        let ty = ux;
-        if (dirX * tx + dirY * ty < 0) {
-          tx = -tx;
-          ty = -ty;
-        }
-        const tangentSpeedFactor = Math.abs(dirX * tx + dirY * ty);
-        if (tangentSpeedFactor > 0.05) {
-          drawBounceRay(
-            aimInfo.ghostX,
-            aimInfo.ghostY,
-            tx,
-            ty,
-            '#4fc3f7',
-            260,
-            [3, 4]
-          );
-        }
-      }
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('ОТМЕНА', cue.x, cue.y - CANCEL_RADIUS - 8);
+      ctx.restore();
     } else {
-      drawBounceRay(
-        aimInfo.ghostX,
-        aimInfo.ghostY,
-        dirX,
-        dirY,
-        'rgba(79, 195, 247, 0.7)',
-        260,
-        [3, 4]
-      );
-    }
+      let power = Math.min(dist, 180);
+      let angle = Math.atan2(dy, dx);
+      const dirX = Math.cos(angle);
+      const dirY = Math.sin(angle);
 
-    // 4. Кий
-    ctx.strokeStyle = '#d7ccc8';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(cue.x - dirX * (R + 5 + power * 0.2), cue.y - dirY * (R + 5 + power * 0.2));
-    ctx.lineTo(cue.x - dirX * (R + 85 + power * 0.2), cue.y - dirY * (R + 85 + power * 0.2));
-    ctx.stroke();
+      const aimInfo = traceAim(cue, angle);
+
+      // 1. Линия пути битка до точки касания
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cue.x, cue.y);
+      ctx.lineTo(aimInfo.ghostX, aimInfo.ghostY);
+      ctx.stroke();
+      ctx.restore();
+
+      // 2. Призрачный биток в точке касания
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(aimInfo.ghostX, aimInfo.ghostY, R, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // 3. Траектория прицельного шара и отскок битка после соударения
+      if (aimInfo.hitBall) {
+        const target = aimInfo.hitBall;
+        const nx = target.x - aimInfo.ghostX;
+        const ny = target.y - aimInfo.ghostY;
+        const len = Math.hypot(nx, ny);
+        if (len > 0) {
+          const ux = nx / len;
+          const uy = ny / len;
+          const isLegal = boughtColor
+            ? target.type === boughtColor
+            : target.type === 'red';
+
+          drawBounceRay(
+            target.x,
+            target.y,
+            ux,
+            uy,
+            isLegal ? '#00e676' : '#ff5252',
+            500,
+            [6, 4]
+          );
+
+          let tx = -uy;
+          let ty = ux;
+          if (dirX * tx + dirY * ty < 0) {
+            tx = -tx;
+            ty = -ty;
+          }
+          const tangentSpeedFactor = Math.abs(dirX * tx + dirY * ty);
+          if (tangentSpeedFactor > 0.05) {
+            drawBounceRay(
+              aimInfo.ghostX,
+              aimInfo.ghostY,
+              tx,
+              ty,
+              '#4fc3f7',
+              260,
+              [3, 4]
+            );
+          }
+        }
+      } else {
+        drawBounceRay(
+          aimInfo.ghostX,
+          aimInfo.ghostY,
+          dirX,
+          dirY,
+          'rgba(79, 195, 247, 0.7)',
+          260,
+          [3, 4]
+        );
+      }
+
+      // 4. Кий
+      ctx.strokeStyle = '#d7ccc8';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(cue.x - dirX * (R + 5 + power * 0.2), cue.y - dirY * (R + 5 + power * 0.2));
+      ctx.lineTo(cue.x - dirX * (R + 85 + power * 0.2), cue.y - dirY * (R + 85 + power * 0.2));
+      ctx.stroke();
+    }
   }
 
   if (isMoving) {
@@ -306,8 +325,19 @@ function getPointerPos(e) {
   };
 }
 
+function cancelAim() {
+  isAiming = false;
+}
+
 function onPointerDown(e) {
   if (isMoving) return;
+
+  // Правая кнопка мыши во время прицеливания отменяет прицел
+  if (e.button === 2) {
+    if (isAiming) cancelAim();
+    return;
+  }
+
   let pos = getPointerPos(e);
   let cue = balls.find(b => b.type === 'cue');
 
@@ -329,15 +359,16 @@ function onPointerMove(e) {
   aimEnd = getPointerPos(e);
 }
 
-function onPointerUp() {
+function onPointerUp(e) {
   if (!isAiming) return;
+  if (e && e.button === 2) return;
   isAiming = false;
   let cue = balls.find(b => b.type === 'cue');
   let dx = cue.x - aimEnd.x;
   let dy = cue.y - aimEnd.y;
   let dist = Math.hypot(dx, dy);
 
-  if (dist > 5) {
+  if (dist > CANCEL_RADIUS) {
     let power = Math.min(dist, 180) * 0.11;
     let angle = Math.atan2(dy, dx);
     cue.vx = Math.cos(angle) * power;
@@ -351,9 +382,15 @@ function onPointerUp() {
 }
 
 canvas.addEventListener('mousedown', onPointerDown);
+canvas.addEventListener('contextmenu', e => {
+e.preventDefault();
+if (isAiming) cancelAim();
+});
 window.addEventListener('mousemove', onPointerMove);
 window.addEventListener('mouseup', onPointerUp);
-
+window.addEventListener('keydown', e => {
+if (e.key === 'Escape' && isAiming) cancelAim();
+});
 canvas.addEventListener('touchstart', onPointerDown, { passive: false });
 window.addEventListener('touchmove', onPointerMove, { passive: false });
 window.addEventListener('touchend', onPointerUp);
