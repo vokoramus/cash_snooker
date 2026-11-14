@@ -13,19 +13,22 @@ function updateUI() {
     if (scoreEl) {
       scoreEl.innerText = getScore(i);
 
+      if (scoreEl.previousSibling && scoreEl.previousSibling.nodeType === Node.TEXT_NODE) {
+        scoreEl.previousSibling.textContent = ` | ${t('score')}: `;
+      }
+
       // Находим или оборачиваем блок "Долг", чтобы управлять его позицией и прозрачностью
       let debtWrap = document.getElementById(`p${i + 1}-debt-wrap`);
       if (!debtWrap && debtEl && debtEl.parentElement) {
         debtWrap = document.createElement('span');
         debtWrap.id = `p${i + 1}-debt-wrap`;
         debtWrap.className = 'debt-badge';
-        debtWrap.innerHTML = ` | Долг: <strong id="p${i + 1}-debt">0</strong>`;
+        debtWrap.innerHTML = ` | ${t('debt')}: <strong id="p${i + 1}-debt">0</strong>`;
 
         // Удаляем старый текстовый узел " | Долг: " и старый span из шапки
         const parent = debtEl.parentElement;
-        const nodes = Array.from(parent.childNodes);
-        nodes.forEach(node => {
-          if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('Долг')) {
+        Array.from(parent.childNodes).forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE && (node.textContent.includes('Долг') || node.textContent.includes('Debt'))) {
             parent.removeChild(node);
           }
         });
@@ -39,7 +42,7 @@ function updateUI() {
         score2Wrap = document.createElement('span');
         score2Wrap.id = `p${i + 1}-score2-wrap`;
         score2Wrap.className = 'score2-badge';
-        score2Wrap.innerHTML = ` | Счёт 2: <strong id="p${i + 1}-score2">0</strong>`;
+        score2Wrap.innerHTML = ` | ${t('score2')}: <strong id="p${i + 1}-score2">0</strong>`;
 
         const targetDebtWrap = document.getElementById(`p${i + 1}-debt-wrap`);
         if (targetDebtWrap && targetDebtWrap.parentElement === scoreEl.parentElement) {
@@ -49,18 +52,14 @@ function updateUI() {
         }
       }
 
-      const score2El = document.getElementById(`p${i + 1}-score2`);
-      if (score2El) {
-        score2El.innerText = getScoreDouble(i);
+      if (score2Wrap) {
+        score2Wrap.innerHTML = ` | ${t('score2')}: <strong id="p${i + 1}-score2">${getScoreDouble(i)}</strong>`;
       }
     }
 
-    const updatedDebtEl = document.getElementById(`p${i + 1}-debt`);
     const updatedDebtWrap = document.getElementById(`p${i + 1}-debt-wrap`);
-    if (updatedDebtEl) {
-      updatedDebtEl.innerText = players[i].debt;
-    }
     if (updatedDebtWrap) {
+      updatedDebtWrap.innerHTML = ` | ${t('debt')}: <strong id="p${i + 1}-debt">${players[i].debt}</strong>`;
       if (players[i].debt === 0) {
         updatedDebtWrap.classList.add('debt-zero');
         updatedDebtWrap.classList.remove('debt-active');
@@ -70,8 +69,14 @@ function updateUI() {
       }
     }
 
-    let limitText = hasActiveColors() ? `${players[i].reds}/8` : `${players[i].reds} (без лимита)`;
-    document.getElementById(`p${i + 1}-reds-count`).innerText = limitText;
+    const redsCountEl = document.getElementById(`p${i + 1}-reds-count`);
+    if (redsCountEl) {
+      let limitText = hasActiveColors() ? `${players[i].reds}/8` : `${players[i].reds} (${t('noLimit')})`;
+      redsCountEl.innerText = limitText;
+      if (redsCountEl.previousSibling && redsCountEl.previousSibling.nodeType === Node.TEXT_NODE) {
+        redsCountEl.previousSibling.textContent = `${t('redsLabel')} (`;
+      }
+    }
 
     let rDiv = document.getElementById(`p${i + 1}-reds`);
     rDiv.innerHTML = '';
@@ -371,7 +376,7 @@ function draw() {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
       ctx.font = 'bold 11px system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('ОТМЕНА', cue.x, cue.y - CANCEL_RADIUS - 8);
+      ctx.fillText(t('cancel'), cue.x, cue.y - CANCEL_RADIUS - 8);
       ctx.restore();
     } else {
       let pull = Math.min(dist, 180);
@@ -590,6 +595,19 @@ function onPointerUp(e) {
   }
 }
 
+function ensureLangButton() {
+  if (document.getElementById('btn-lang')) return;
+  const controls = document.querySelector('.controls');
+  if (!controls) return;
+  const btn = document.createElement('button');
+  btn.id = 'btn-lang';
+  btn.innerText = 'EN';
+  btn.style.background = '#455a64';
+  btn.style.marginLeft = 'auto';
+  btn.onclick = toggleLanguage;
+  controls.appendChild(btn);
+}
+
 canvas.addEventListener('mousedown', onPointerDown);
 canvas.addEventListener('contextmenu', e => {
   e.preventDefault();
@@ -605,5 +623,6 @@ canvas.addEventListener('touchstart', onPointerDown, { passive: false });
 window.addEventListener('touchmove', onPointerMove, { passive: false });
 window.addEventListener('touchend', onPointerUp);
 
+ensureLangButton();
 resetGame();
 draw();

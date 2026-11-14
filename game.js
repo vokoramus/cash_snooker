@@ -51,7 +51,8 @@ function resetGame() {
     }
   }
 
-  setStatus("Ход Игрока 1. Кликните в секторе D или тяните от битка для удара.");
+  setGameStatus(() => t('statusStart'));
+
   if (typeof updateUI === 'function') updateUI();
 }
 
@@ -85,7 +86,7 @@ function buyColor(colorKey) {
   p.reds -= cost;
   boughtColor = colorKey;
   pendingRedsToTable += cost;
-  setStatus(`Игрок ${turn + 1} купил ${COLORS_DATA[colorKey].name} за ${cost} красных! Бейте по нему.`);
+  setGameStatus(() => t('statusBought', turn + 1, I18N[currentLang].colors[colorKey], cost));
   updateUI();
 }
 
@@ -137,21 +138,26 @@ function handleShotEnd() {
 
   if (isRespotRed) {
     let redPotted = shotEvents.potted.some(b => b.type === 'red');
+
+    // Фол на Re-spot Red
     if (foul) {
       let winnerIdx = 1 - turn;
       respotBonus[winnerIdx] = 1;
-      setStatus(`ФОЛ на Re-spot Red! Счёт ${getScore(0)}:${getScore(1)} (Счёт 2: ${getScoreDouble(0)}:${getScoreDouble(1)}). Победил Игрок ${winnerIdx + 1}!`);
+      setGameStatus(() => t('statusRespotFoul', getScore(0), getScore(1), getScoreDouble(0), getScoreDouble(1), winnerIdx + 1));
       updateUI();
       return;
     }
+
+    // Забитие на Re-spot Red
     if (redPotted) {
       respotBonus[turn] = 1;
-      setStatus(`RE-SPOT RED ЗАБИТ! Счёт ${getScore(0)}:${getScore(1)} (Счёт 2: ${getScoreDouble(0)}:${getScoreDouble(1)}). Победил Игрок ${turn + 1}!`);
+      setGameStatus(() => t('statusRespotPot', getScore(0), getScore(1), getScoreDouble(0), getScoreDouble(1), turn + 1));
       updateUI();
       return;
     }
+    // Промах на Re-spot Red
     turn = 1 - turn;
-    setStatus(`Промах на Re-spot Red. Ход переходит к Игроку ${turn + 1}.`);
+    setGameStatus(() => t('statusRespotMiss', turn + 1));
     updateUI();
     return;
   }
@@ -226,22 +232,23 @@ function handleShotEnd() {
       cue.y = H / 2;
       ballInHand = true;
       turn = 1 - turn;
-      setStatus(`НИЧЬЯ 21:21! Объявляется RE-SPOT RED! Игрок ${turn + 1} бьёт с руки.`);
+      setGameStatus(() => t('statusTie', turn + 1));
       updateUI();
       return;
     } else {
       let winner = s1 > s2 ? "Игрок 1" : "Игрок 2";
-      setStatus(`ПАРТИЯ ОКОНЧЕНА! Счёт ${s1}:${s2} (Счёт 2: ${getScoreDouble(0)}:${getScoreDouble(1)}). Победил ${winner}!`);
+      setGameStatus(() => t('statusWin', s1, s2, getScoreDouble(0), getScoreDouble(1), s1 > s2 ? 1 : 2));
       updateUI();
       return;
     }
   }
 
+  // Обычный ход (фол / промах / серия)
   if (!validPot || foul) {
     turn = 1 - turn;
-    setStatus(foul ? `ФОЛ! Штраф 1 красный. Ход переходит к Игроку ${turn + 1}.` : `Промах. Ход Игрока ${turn + 1}.`);
+    setGameStatus(() => foul ? t('statusFoul', turn + 1) : t('statusMiss', turn + 1));
   } else {
-    setStatus(`Отличный удар! Игрок ${turn + 1} продолжает серию.`);
+    setGameStatus(() => t('statusContinue', turn + 1));
   }
 
   updateUI();
