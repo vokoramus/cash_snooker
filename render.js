@@ -251,43 +251,46 @@ function drawBounceRay(startX, startY, dirX, dirY, color, maxVisualLen, stopDist
   }
 }
 
-// Вертикальный индикатор силы удара справа на столе
-function drawPowerBar(powerRatio) {
-  const barW = 12;
-  const barH = 160;
-  const x = W - CUSHION - barW - 10;
-  const y = (H - barH) / 2;
+// Вертикальный индикатор силы удара справа
+function ensurePowerBarUI() {
+  let barWrap = document.getElementById('power-bar-wrap');
+  if (barWrap) return barWrap;
 
-  ctx.save();
-  // Подложка шкалы
-  ctx.fillStyle = 'rgba(10, 15, 12, 0.72)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(x, y, barW, barH, 6);
-  ctx.fill();
-  ctx.stroke();
+  // Оборачиваем canvas, чтобы поставить прогресс-бар строго справа от стола
+  const wrapper = document.createElement('div');
+  wrapper.className = 'table-stage';
+  canvas.parentNode.insertBefore(wrapper, canvas);
+  wrapper.appendChild(canvas);
 
-  // Градиент заполнения снизу вверх (зелёный -> жёлтый -> красный)
-  const fillH = Math.max(0, Math.min(barH - 4, (barH - 4) * powerRatio));
-  if (fillH > 0) {
-    const grad = ctx.createLinearGradient(0, y + barH, 0, y);
-    grad.addColorStop(0, '#00e676');
-    grad.addColorStop(0.55, '#ffea00');
-    grad.addColorStop(1, '#ff1744');
+  barWrap = document.createElement('div');
+  barWrap.id = 'power-bar-wrap';
+  barWrap.className = 'power-bar-container';
+  barWrap.innerHTML = `
+    <div class="power-bar-track">
+      <div id="power-bar-fill" class="power-bar-fill"></div>
+    </div>
+    <div id="power-bar-label" class="power-bar-label">0%</div>
+  `;
+  wrapper.appendChild(barWrap);
+  return barWrap;
+}
 
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.roundRect(x + 2, y + barH - 2 - fillH, barW - 4, fillH, 4);
-    ctx.fill();
+function updatePowerBar(powerRatio, active) {
+  const barWrap = ensurePowerBarUI();
+  const fill = document.getElementById('power-bar-fill');
+  const label = document.getElementById('power-bar-label');
+
+  if (!active) {
+    barWrap.classList.remove('active');
+    fill.style.height = '0%';
+    label.innerText = '0%';
+    return;
   }
 
-  // Процент силы под шкалой
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 11px system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(`${Math.round(powerRatio * 100)}%`, x + barW / 2, y + barH + 14);
-  ctx.restore();
+  barWrap.classList.add('active');
+  const pct = Math.round(powerRatio * 100);
+  fill.style.height = `${pct}%`;
+  label.innerText = `${pct}%`;
 }
 
 function draw() {
@@ -496,8 +499,13 @@ function draw() {
       ctx.lineTo(cue.x - dirX * (R + 85 + pull * 0.2), cue.y - dirY * (R + 85 + pull * 0.2));
       ctx.stroke();
 
-      drawPowerBar(powerRatio);
+      updatePowerBar(powerRatio, true);
+
     }
+  }
+
+  if (!isAiming || Math.hypot(balls.find(b => b.type === 'cue').x - aimEnd.x, balls.find(b => b.type === 'cue').y - aimEnd.y) <= CANCEL_RADIUS) {
+    updatePowerBar(0, false);
   }
 
   if (isMoving) {
