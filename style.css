@@ -112,3 +112,20 @@ canvas {
   max-width: 95vw;
   height: auto;
 }
+
+#p1-score, #p2-score {
+  color: #69f0ae;
+  font-weight: 800;
+  font-size: 1.15em;
+}
+
+.score2-badge {
+  color: #b0bec5;
+  font-size: 0.95em;
+}
+
+#p1-score2, #p2-score2 {
+  color: #ffb74d;
+  font-weight: 800;
+  font-size: 1.15em;
+}

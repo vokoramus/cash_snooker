@@ -15,6 +15,7 @@ let boughtColor = null;
 let pendingRedsToTable = 0;
 let ballInHand = true;
 let isRespotRed = false;
+let respotBonus = [0, 0];
 let shotEvents = { firstHit: null, potted: [], cuePotted: false };
 
 function resetGame() {
@@ -27,6 +28,7 @@ function resetGame() {
   pendingRedsToTable = 0;
   ballInHand = true;
   isRespotRed = false;
+  respotBonus = [0, 0];
   balls = [];
 
   balls.push({ type: 'cue', hex: '#ffffff', x: 140, y: H / 2, vx: 0, vy: 0, active: true });
@@ -64,7 +66,13 @@ function hasActiveColors() {
 function getScore(idx) {
   let p = players[idx];
   let cSum = p.colors.reduce((acc, c) => acc + c.val, 0);
-  return cSum + p.reds;
+  return cSum + p.reds + respotBonus[idx];
+}
+
+function getScoreDouble(idx) {
+  let p = players[idx];
+  let cSum = p.colors.reduce((acc, c) => acc + c.val * 2, 0);
+  return cSum + p.reds + respotBonus[idx];
 }
 
 function buyColor(colorKey) {
@@ -83,21 +91,32 @@ function buyColor(colorKey) {
 
 function spawnRedsOnLine(count) {
   if (count <= 0) return;
-  let startX = COLORS_DATA.pink.x + R * 2.2;
-  let step = R * 2.15;
-  let dir = 1;
+  const step = R * 2.15;
+  const minX = R + CUSHION + 5;
+  const maxX = W - R - CUSHION - 5;
 
   for (let i = 0; i < count; i++) {
     let placed = false;
-    let testX = startX;
-    while (!placed) {
-      if (testX > W - 25) {
+    let testX = COLORS_DATA.pink.x + R * 2.2;
+    let dir = 1;
+    let rowOffset = 0;
+    let attempts = 0;
+
+    while (!placed && attempts < 200) {
+      attempts++;
+      if (dir === 1 && testX > maxX) {
         dir = -1;
         testX = COLORS_DATA.pink.x - R * 2.2;
+      } else if (dir === -1 && testX < minX) {
+        rowOffset = rowOffset <= 0 ? Math.abs(rowOffset) + R * 2.2 : -rowOffset;
+        dir = 1;
+        testX = COLORS_DATA.pink.x + R * 2.2;
       }
-      let overlap = balls.some(b => b.active && Math.hypot(b.x - testX, b.y - H / 2) < R * 2.05);
+
+      let testY = H / 2 + rowOffset;
+      let overlap = balls.some(b => b.active && Math.hypot(b.x - testX, b.y - testY) < R * 2.05);
       if (!overlap) {
-        balls.push({ type: 'red', hex: '#d32f2f', val: 1, x: testX, y: H / 2, vx: 0, vy: 0, active: true });
+        balls.push({ type: 'red', hex: '#d32f2f', val: 1, x: testX, y: testY, vx: 0, vy: 0, active: true });
         placed = true;
       } else {
         testX += step * dir;
@@ -115,6 +134,27 @@ function handleShotEnd() {
   if (!shotEvents.firstHit) foul = true;
   if (boughtColor && shotEvents.firstHit && shotEvents.firstHit.type !== boughtColor) foul = true;
   if (!boughtColor && shotEvents.firstHit && shotEvents.firstHit.type !== 'red') foul = true;
+
+  if (isRespotRed) {
+    let redPotted = shotEvents.potted.some(b => b.type === 'red');
+    if (foul) {
+      let winnerIdx = 1 - turn;
+      respotBonus[winnerIdx] = 1;
+      setStatus(`ФОЛ на Re-spot Red! Счёт ${getScore(0)}:${getScore(1)} (Счёт 2: ${getScoreDouble(0)}:${getScoreDouble(1)}). Победил Игрок ${winnerIdx + 1}!`);
+      updateUI();
+      return;
+    }
+    if (redPotted) {
+      respotBonus[turn] = 1;
+      setStatus(`RE-SPOT RED ЗАБИТ! Счёт ${getScore(0)}:${getScore(1)} (Счёт 2: ${getScoreDouble(0)}:${getScoreDouble(1)}). Победил Игрок ${turn + 1}!`);
+      updateUI();
+      return;
+    }
+    turn = 1 - turn;
+    setStatus(`Промах на Re-spot Red. Ход переходит к Игроку ${turn + 1}.`);
+    updateUI();
+    return;
+  }
 
   let validPot = false;
   shotEvents.potted.forEach(b => {
@@ -181,6 +221,9 @@ function handleShotEnd() {
     if (s1 === s2 && !isRespotRed) {
       isRespotRed = true;
       balls.push({ type: 'red', hex: '#d32f2f', val: 1, x: COLORS_DATA.black.x, y: H / 2, vx: 0, vy: 0, active: true });
+      let cue = balls.find(b => b.type === 'cue');
+      cue.x = 140;
+      cue.y = H / 2;
       ballInHand = true;
       turn = 1 - turn;
       setStatus(`НИЧЬЯ 21:21! Объявляется RE-SPOT RED! Игрок ${turn + 1} бьёт с руки.`);
@@ -188,7 +231,7 @@ function handleShotEnd() {
       return;
     } else {
       let winner = s1 > s2 ? "Игрок 1" : "Игрок 2";
-      setStatus(`ПАРТИЯ ОКОНЧЕНА! Счёт ${s1}:${s2}. Победил ${winner}!`);
+      setStatus(`ПАРТИЯ ОКОНЧЕНА! Счёт ${s1}:${s2} (Счёт 2: ${getScoreDouble(0)}:${getScoreDouble(1)}). Победил ${winner}!`);
       updateUI();
       return;
     }

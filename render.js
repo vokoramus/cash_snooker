@@ -7,7 +7,24 @@ const CANCEL_RADIUS = R + 5; // Радиус возврата к битку дл
 
 function updateUI() {
   for (let i = 0; i < 2; i++) {
-    document.getElementById(`p${i + 1}-score`).innerText = getScore(i);
+    const scoreEl = document.getElementById(`p${i + 1}-score`);
+    if (scoreEl) {
+      scoreEl.innerText = getScore(i);
+
+      let score2Wrap = document.getElementById(`p${i + 1}-score2-wrap`);
+      if (!score2Wrap && scoreEl.parentElement) {
+        score2Wrap = document.createElement('span');
+        score2Wrap.id = `p${i + 1}-score2-wrap`;
+        score2Wrap.className = 'score2-badge';
+        score2Wrap.innerHTML = ` | Счёт 2: <strong id="p${i + 1}-score2">0</strong>`;
+        scoreEl.parentElement.appendChild(score2Wrap);
+      }
+      const score2El = document.getElementById(`p${i + 1}-score2`);
+      if (score2El) {
+        score2El.innerText = getScoreDouble(i);
+      }
+    }
+
     document.getElementById(`p${i + 1}-debt`).innerText = players[i].debt;
     let limitText = hasActiveColors() ? `${players[i].reds}/8` : `${players[i].reds} (без лимита)`;
     document.getElementById(`p${i + 1}-reds-count`).innerText = limitText;
@@ -21,7 +38,7 @@ function updateUI() {
     let cDiv = document.getElementById(`p${i + 1}-colors`);
     cDiv.innerHTML = '';
     players[i].colors.forEach(c => {
-      cDiv.innerHTML += `<span class="dot" style="background:${c.hex}" title="${c.val}"></span>`;
+      cDiv.innerHTML += `<span class="dot" style="background:${c.hex}" title="${c.val} (2x: ${c.val * 2})"></span>`;
     });
 
     document.getElementById(`p${i + 1}-box`).className = `player-box ${turn === i ? 'active-turn' : ''}`;
@@ -251,15 +268,8 @@ function draw() {
             ? target.type === boughtColor
             : target.type === 'red';
 
-          drawBounceRay(
-            target.x,
-            target.y,
-            ux,
-            uy,
-            isLegal ? '#00e676' : '#ff5252',
-            500,
-            [6, 4]
-          );
+          drawBounceRay(target.x, target.y, ux, uy,
+           isLegal ? '#00e676' : '#ff5252', 500, [6, 4]);
 
           let tx = -uy;
           let ty = ux;
@@ -269,27 +279,13 @@ function draw() {
           }
           const tangentSpeedFactor = Math.abs(dirX * tx + dirY * ty);
           if (tangentSpeedFactor > 0.05) {
-            drawBounceRay(
-              aimInfo.ghostX,
-              aimInfo.ghostY,
-              tx,
-              ty,
-              '#4fc3f7',
-              260,
-              [3, 4]
-            );
+            drawBounceRay(aimInfo.ghostX, aimInfo.ghostY, tx, ty,
+             '#4fc3f7', 260, [4, 4]);
           }
         }
       } else {
-        drawBounceRay(
-          aimInfo.ghostX,
-          aimInfo.ghostY,
-          dirX,
-          dirY,
-          'rgba(79, 195, 247, 0.7)',
-          260,
-          [3, 4]
-        );
+        drawBounceRay(aimInfo.ghostX, aimInfo.ghostY, dirX, dirY,
+         'rgba(79, 195, 247, 0.7)', 260, [4, 4]);
       }
 
       // 4. Кий
@@ -362,6 +358,7 @@ function onPointerMove(e) {
 function onPointerUp(e) {
   if (!isAiming) return;
   if (e && e.button === 2) return;
+
   isAiming = false;
   let cue = balls.find(b => b.type === 'cue');
   let dx = cue.x - aimEnd.x;
@@ -383,14 +380,15 @@ function onPointerUp(e) {
 
 canvas.addEventListener('mousedown', onPointerDown);
 canvas.addEventListener('contextmenu', e => {
-e.preventDefault();
-if (isAiming) cancelAim();
+  e.preventDefault();
+  if (isAiming) cancelAim();
 });
 window.addEventListener('mousemove', onPointerMove);
 window.addEventListener('mouseup', onPointerUp);
 window.addEventListener('keydown', e => {
-if (e.key === 'Escape' && isAiming) cancelAim();
+  if (e.key === 'Escape' && isAiming) cancelAim();
 });
+
 canvas.addEventListener('touchstart', onPointerDown, { passive: false });
 window.addEventListener('touchmove', onPointerMove, { passive: false });
 window.addEventListener('touchend', onPointerUp);
