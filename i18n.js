@@ -14,6 +14,7 @@ const I18N = {
     noLimit: 'без лимита',
     cancel: 'ОТМЕНА',
     newGame: 'Новая партия',
+    moveBalls: '🖐 Двигать шары',
     colors: {
       yellow: 'Жёлт.',
       green: 'Зел.',
@@ -46,6 +47,7 @@ const I18N = {
     noLimit: 'no limit',
     cancel: 'CANCEL',
     newGame: 'New Frame',
+    moveBalls: '🖐 Move balls',
     colors: {
       yellow: 'Yellow',
       green: 'Green',
@@ -114,6 +116,9 @@ function toggleLanguage() {
     replaceTextNodes(box, ['Игрок 1', 'Игрок 2', 'Player 1', 'Player 2'], t(`player${num}`));
     replaceTextNodes(box, ['Купленные цветные', 'Bought colors'], t('colorsLabel'));
   });
+
+  const moveBtn = document.getElementById('btn-move-mode');
+  if (moveBtn) moveBtn.innerText = t('moveBalls');
 
   setGameStatus(lastStatusUpdater);
   if (typeof updateUI === 'function') updateUI();

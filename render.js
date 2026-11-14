@@ -5,6 +5,39 @@ let isAiming = false;
 let aimEnd = { x: 0, y: 0 };
 const CANCEL_RADIUS = R + 5; // Радиус возврата к битку для отмены удара
 
+let isMoveMode = false;
+let draggedBall = null;
+
+function toggleMoveMode() {
+  isMoveMode = !isMoveMode;
+  draggedBall = null;
+  isAiming = false;
+  const btn = document.getElementById('btn-move-mode');
+  if (btn) {
+    btn.style.background = isMoveMode ? '#00897b' : '#455a64';
+    btn.style.boxShadow = isMoveMode ? '0 0 0 2px #80cbc4' : 'none';
+  }
+}
+
+function ensureMoveModeButton() {
+  if (document.getElementById('btn-move-mode')) return;
+  const controls = document.querySelector('.controls');
+  const langBtn = document.getElementById('btn-lang');
+  if (!controls) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'btn-move-mode';
+  btn.innerText = typeof t === 'function' ? t('moveBalls') : '🖐 Двигать шары';
+  btn.style.background = '#455a64';
+  btn.onclick = toggleMoveMode;
+
+  if (langBtn) {
+    controls.insertBefore(btn, langBtn);
+  } else {
+    controls.appendChild(btn);
+  }
+}
+
 function updateUI() {
   for (let i = 0; i < 2; i++) {
     const scoreEl = document.getElementById(`p${i + 1}-score`);
@@ -354,6 +387,15 @@ function draw() {
       ctx.arc(b.x, b.y, R + 3, 0, Math.PI * 2);
       ctx.stroke();
     }
+
+    if (draggedBall === b) {
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, R + 4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
   }
 
   // Прицел, траектория прицельного, отскок битка и кий
@@ -540,16 +582,45 @@ function cancelAim() {
   isAiming = false;
 }
 
+function clampBallToTable(ball, x, y) {
+  const minX = R + CUSHION;
+  const maxX = W - R - CUSHION;
+  const minY = R + CUSHION;
+  const maxY = H - R - CUSHION;
+  ball.x = Math.max(minX, Math.min(maxX, x));
+  ball.y = Math.max(minY, Math.min(maxY, y));
+}
+
 function onPointerDown(e) {
   if (isMoving) return;
 
-  // Правая кнопка мыши во время прицеливания отменяет прицел
   if (e.button === 2) {
     if (isAiming) cancelAim();
+    draggedBall = null;
     return;
   }
 
   let pos = getPointerPos(e);
+
+  // Режим свободного перемещения шаров (кнопка или зажатый Shift)
+  if (isMoveMode || e.shiftKey) {
+    let closest = null;
+    let minDist = R + 12;
+    for (let b of balls) {
+      if (!b.active) continue;
+      let d = Math.hypot(pos.x - b.x, pos.y - b.y);
+      if (d < minDist) {
+        minDist = d;
+        closest = b;
+      }
+    }
+    if (closest) {
+      draggedBall = closest;
+      isAiming = false;
+      return;
+    }
+  }
+
   let cue = balls.find(b => b.type === 'cue');
 
   if (ballInHand && pos.x <= 180 && Math.hypot(pos.x - 180, pos.y - H / 2) <= 55) {
@@ -566,11 +637,27 @@ function onPointerDown(e) {
 }
 
 function onPointerMove(e) {
+  if (draggedBall) {
+    let pos = getPointerPos(e);
+    clampBallToTable(draggedBall, pos.x, pos.y);
+    return;
+  }
   if (!isAiming) return;
   aimEnd = getPointerPos(e);
 }
 
 function onPointerUp(e) {
+  if (draggedBall) {
+    // Защита от нулевого расстояния между центрами шаров
+    for (let other of balls) {
+      if (other !== draggedBall && other.active && Math.hypot(other.x - draggedBall.x, other.y - draggedBall.y) < 1) {
+        draggedBall.x += 1;
+      }
+    }
+    draggedBall = null;
+    return;
+  }
+
   if (!isAiming) return;
   if (e && e.button === 2) return;
 
@@ -585,8 +672,7 @@ function onPointerUp(e) {
     let angle = Math.atan2(dy, dx);
     cue.vx = Math.cos(angle) * power;
     cue.vy = Math.sin(angle) * power;
-
-    SoundFX.playCueHit(Math.min(dist, 180) / 180);
+    if (typeof SoundFX !== 'undefined') SoundFX.playCueHit(Math.min(dist, 180) / 180);
 
     shotEvents = { firstHit: null, potted: [], cuePotted: false };
     ballInHand = false;
@@ -624,5 +710,6 @@ window.addEventListener('touchmove', onPointerMove, { passive: false });
 window.addEventListener('touchend', onPointerUp);
 
 ensureLangButton();
+ensureMoveModeButton();
 resetGame();
 draw();
