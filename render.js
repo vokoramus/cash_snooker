@@ -140,11 +140,61 @@ function traceAim(cue, angle) {
   };
 }
 
-function drawBounceRay(startX, startY, dirX, dirY, color, maxLen, dashPattern) {
+// Точный расчёт пробега шара до полной остановки по физике SUBSTEPS
+function calcStopDistance(v0) {
+  if (v0 <= 0.08) return 0;
+  const subFriction = Math.pow(FRICTION, 1 / SUBSTEPS);
+  let v = v0;
+  let dist = 0;
+  let guard = 0;
+  while (v >= 0.08 && guard < 4000) {
+    dist += v / SUBSTEPS;
+    v *= subFriction;
+    guard++;
+  }
+  return dist;
+}
+
+// Расчёт скорости битка после прохождения дистанции travelDist
+function calcSpeedAfterDist(v0, travelDist) {
+  if (v0 <= 0.08) return 0;
+  const subFriction = Math.pow(FRICTION, 1 / SUBSTEPS);
+  let v = v0;
+  let d = 0;
+  let guard = 0;
+  while (v >= 0.08 && d < travelDist && guard < 4000) {
+    d += v / SUBSTEPS;
+    v *= subFriction;
+    guard++;
+  }
+  return v >= 0.08 ? v : 0;
+}
+
+// Отрисовка пунктирного кружка в точке остановки шара
+function drawStopMarker(x, y, color) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.arc(x, y, R, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Луч движения шара с учётом 1 отскока от борта и реальной дистанции остановки
+function drawBounceRay(startX, startY, dirX, dirY, color, maxVisualLen, stopDist, dashPattern) {
   const minX = R + CUSHION;
   const maxX = W - R - CUSHION;
   const minY = R + CUSHION;
   const maxY = H - R - CUSHION;
+
+  const isStoppingShort = stopDist < maxVisualLen;
+  const effectiveLen = Math.min(maxVisualLen, stopDist);
+  if (effectiveLen <= 1) {
+    drawStopMarker(startX, startY, color);
+    return;
+  }
 
   let tWall = Infinity;
   let hitVertical = false;
@@ -170,24 +220,73 @@ function drawBounceRay(startX, startY, dirX, dirY, color, maxLen, dashPattern) {
   ctx.lineWidth = 2;
   ctx.setLineDash(dashPattern || []);
 
-  if (tWall >= maxLen) {
+  let endX, endY;
+  if (tWall >= effectiveLen) {
+    endX = startX + dirX * effectiveLen;
+    endY = startY + dirY * effectiveLen;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
-    ctx.lineTo(startX + dirX * maxLen, startY + dirY * maxLen);
+    ctx.lineTo(endX, endY);
     ctx.stroke();
   } else {
     const bounceX = startX + dirX * tWall;
     const bounceY = startY + dirY * tWall;
-    const remLen = maxLen - tWall;
+    // Учитываем потерю скорости 0.85 при отскоке от борта
+    const remLen = (effectiveLen - tWall) * 0.85;
     const refDirX = hitVertical ? -dirX : dirX;
     const refDirY = hitVertical ? dirY : -dirY;
+    endX = bounceX + refDirX * remLen;
+    endY = bounceY + refDirY * remLen;
 
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(bounceX, bounceY);
-    ctx.lineTo(bounceX + refDirX * remLen, bounceY + refDirY * remLen);
+    ctx.lineTo(endX, endY);
     ctx.stroke();
   }
+  ctx.restore();
+
+  if (isStoppingShort) {
+    drawStopMarker(endX, endY, color);
+  }
+}
+
+// Вертикальный индикатор силы удара справа на столе
+function drawPowerBar(powerRatio) {
+  const barW = 12;
+  const barH = 160;
+  const x = W - CUSHION - barW - 10;
+  const y = (H - barH) / 2;
+
+  ctx.save();
+  // Подложка шкалы
+  ctx.fillStyle = 'rgba(10, 15, 12, 0.72)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(x, y, barW, barH, 6);
+  ctx.fill();
+  ctx.stroke();
+
+  // Градиент заполнения снизу вверх (зелёный -> жёлтый -> красный)
+  const fillH = Math.max(0, Math.min(barH - 4, (barH - 4) * powerRatio));
+  if (fillH > 0) {
+    const grad = ctx.createLinearGradient(0, y + barH, 0, y);
+    grad.addColorStop(0, '#00e676');
+    grad.addColorStop(0.55, '#ffea00');
+    grad.addColorStop(1, '#ff1744');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x + 2, y + barH - 2 - fillH, barW - 4, fillH, 4);
+    ctx.fill();
+  }
+
+  // Процент силы под шкалой
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${Math.round(powerRatio * 100)}%`, x + barW / 2, y + barH + 14);
   ctx.restore();
 }
 
@@ -272,73 +371,132 @@ function draw() {
       ctx.fillText('ОТМЕНА', cue.x, cue.y - CANCEL_RADIUS - 8);
       ctx.restore();
     } else {
-      let power = Math.min(dist, 180);
+      let pull = Math.min(dist, 180);
+      let powerRatio = pull / 180;
+      let v0 = pull * 0.11;
       let angle = Math.atan2(dy, dx);
       const dirX = Math.cos(angle);
       const dirY = Math.sin(angle);
 
       const aimInfo = traceAim(cue, angle);
+      const distToHit = Math.hypot(aimInfo.ghostX - cue.x, aimInfo.ghostY - cue.y);
+      const cueTotalStopDist = calcStopDistance(v0);
 
-      // 1. Линия пути битка до точки касания
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(cue.x, cue.y);
-      ctx.lineTo(aimInfo.ghostX, aimInfo.ghostY);
-      ctx.stroke();
-      ctx.restore();
+      // Если биток остановится раньше, чем доедет до точки касания
+      if (cueTotalStopDist < distToHit) {
+        const stopX = cue.x + dirX * cueTotalStopDist;
+        const stopY = cue.y + dirY * cueTotalStopDist;
 
-      // 2. Призрачный биток в точке касания
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(aimInfo.ghostX, aimInfo.ghostY, R, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cue.x, cue.y);
+        ctx.lineTo(stopX, stopY);
+        ctx.stroke();
+        ctx.restore();
 
-      // 3. Траектория прицельного шара и отскок битка после соударения
-      if (aimInfo.hitBall) {
-        const target = aimInfo.hitBall;
-        const nx = target.x - aimInfo.ghostX;
-        const ny = target.y - aimInfo.ghostY;
-        const len = Math.hypot(nx, ny);
-        if (len > 0) {
-          const ux = nx / len;
-          const uy = ny / len;
-          const isLegal = boughtColor
-            ? target.type === boughtColor
-            : target.type === 'red';
-
-          drawBounceRay(target.x, target.y, ux, uy,
-           isLegal ? '#00e676' : '#ff5252', 500, [6, 4]);
-
-          let tx = -uy;
-          let ty = ux;
-          if (dirX * tx + dirY * ty < 0) {
-            tx = -tx;
-            ty = -ty;
-          }
-          const tangentSpeedFactor = Math.abs(dirX * tx + dirY * ty);
-          if (tangentSpeedFactor > 0.05) {
-            drawBounceRay(aimInfo.ghostX, aimInfo.ghostY, tx, ty,
-             '#4fc3f7', 260, [4, 4]);
-          }
-        }
+        drawStopMarker(stopX, stopY, 'rgba(255, 255, 255, 0.85)');
       } else {
-        drawBounceRay(aimInfo.ghostX, aimInfo.ghostY, dirX, dirY,
-         'rgba(79, 195, 247, 0.7)', 260, [4, 4]);
+        // 1. Линия пути битка до точки касания
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cue.x, cue.y);
+        ctx.lineTo(aimInfo.ghostX, aimInfo.ghostY);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Призрачный биток в точке касания
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(aimInfo.ghostX, aimInfo.ghostY, R, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        const vImpact = calcSpeedAfterDist(v0, distToHit);
+
+        // 3. Траектория прицельного и отскок битка с учётом реальной силы
+        if (aimInfo.hitBall && vImpact > 0.08) {
+          const target = aimInfo.hitBall;
+          const nx = target.x - aimInfo.ghostX;
+          const ny = target.y - aimInfo.ghostY;
+          const len = Math.hypot(nx, ny);
+          if (len > 0) {
+            const ux = nx / len;
+            const uy = ny / len;
+            const isLegal = boughtColor
+              ? target.type === boughtColor
+              : target.type === 'red';
+
+            const cosCut = Math.max(0, dirX * ux + dirY * uy);
+            const vTarget = vImpact * cosCut;
+            const targetStopDist = calcStopDistance(vTarget);
+
+            drawBounceRay(
+              target.x,
+              target.y,
+              ux,
+              uy,
+              isLegal ? '#00e676' : '#ff5252',
+              500,
+              targetStopDist,
+              [6, 4]
+            );
+
+            let tx = -uy;
+            let ty = ux;
+            if (dirX * tx + dirY * ty < 0) {
+              tx = -tx;
+              ty = -ty;
+            }
+            const sinCut = Math.abs(dirX * tx + dirY * ty);
+            if (sinCut > 0.05) {
+              const vCueAfter = vImpact * sinCut;
+              const cueAfterStopDist = calcStopDistance(vCueAfter);
+              drawBounceRay(
+                aimInfo.ghostX,
+                aimInfo.ghostY,
+                tx,
+                ty,
+                '#4fc3f7',
+                260,
+                cueAfterStopDist,
+                [4, 4]
+              );
+            }
+          }
+        } else if (!aimInfo.hitBall && vImpact > 0.08) {
+          // Отскок битка от борта с учётом потери скорости 0.85
+          const vAfterWall = vImpact * 0.85;
+          const wallStopDist = calcStopDistance(vAfterWall);
+          drawBounceRay(
+            aimInfo.ghostX,
+            aimInfo.ghostY,
+            dirX,
+            dirY,
+            'rgba(79, 195, 247, 0.75)',
+            260,
+            wallStopDist,
+            [4, 4]
+          );
+        }
       }
 
-      // 4. Кий
+      // 4. Кий и вертикальный индикатор силы
       ctx.strokeStyle = '#d7ccc8';
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(cue.x - dirX * (R + 5 + power * 0.2), cue.y - dirY * (R + 5 + power * 0.2));
-      ctx.lineTo(cue.x - dirX * (R + 85 + power * 0.2), cue.y - dirY * (R + 85 + power * 0.2));
+      ctx.moveTo(cue.x - dirX * (R + 5 + pull * 0.2), cue.y - dirY * (R + 5 + pull * 0.2));
+      ctx.lineTo(cue.x - dirX * (R + 85 + pull * 0.2), cue.y - dirY * (R + 85 + pull * 0.2));
       ctx.stroke();
+
+      drawPowerBar(powerRatio);
     }
   }
 
