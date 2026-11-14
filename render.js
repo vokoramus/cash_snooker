@@ -581,6 +581,8 @@ function onPointerUp(e) {
     cue.vx = Math.cos(angle) * power;
     cue.vy = Math.sin(angle) * power;
 
+    SoundFX.playCueHit(Math.min(dist, 180) / 180);
+
     shotEvents = { firstHit: null, potted: [], cuePotted: false };
     ballInHand = false;
     isMoving = true;

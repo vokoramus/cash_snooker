@@ -25,6 +25,113 @@ function isNearPocket(x, y) {
   return false;
 }
 
+const SoundFX = (() => {
+  let ctx = null;
+
+  function init() {
+    if (!ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) ctx = new AudioCtx();
+    }
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume();
+    }
+  }
+
+  // Звук удара кия по битку
+  function playCueHit(powerRatio) {
+    init();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const gainVal = Math.min(0.45, Math.max(0.05, powerRatio * 0.45));
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 0.045);
+
+    gain.gain.setValueAtTime(gainVal, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  }
+
+  // Звонкий щелчок шар-шар
+  function playBallClack(impactSpeed) {
+    init();
+    if (!ctx || impactSpeed < 0.15) return;
+    const now = ctx.currentTime;
+    const norm = Math.min(1, impactSpeed / 16);
+    const gainVal = Math.max(0.02, norm * 0.55);
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    // Лёгкий случайный разброс высоты тона для живости кластера
+    const baseFreq = 2050 + (Math.random() - 0.5) * 260;
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(baseFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(680, now + 0.025);
+
+    gain.gain.setValueAtTime(gainVal, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.028);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.03);
+  }
+
+  // Глухой отскок от резинового борта
+  function playCushionHit(speed) {
+    init();
+    if (!ctx || speed < 0.25) return;
+    const now = ctx.currentTime;
+    const norm = Math.min(1, speed / 15);
+    const gainVal = Math.max(0.02, norm * 0.3);
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(155, now);
+    osc.frequency.exponentialRampToValueAtTime(65, now + 0.06);
+
+    gain.gain.setValueAtTime(gainVal, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.07);
+  }
+
+  // Стук падения шара в лузу
+  function playPocketDrop() {
+    init();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(125, now);
+    osc.frequency.exponentialRampToValueAtTime(48, now + 0.14);
+
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.16);
+  }
+
+  return { playCueHit, playBallClack, playCushionHit, playPocketDrop };
+})();
+
 function stepPhysics(balls, shotEvents) {
   let movingNow = false;
   const subFriction = Math.pow(FRICTION, 1 / SUBSTEPS);
@@ -43,6 +150,7 @@ function stepPhysics(balls, shotEvents) {
       for (let p of POCKETS) {
         if (Math.hypot(b.x - p.x, b.y - p.y) < p.r) {
           b.active = false;
+          SoundFX.playPocketDrop();
           b.vx = 0;
           b.vy = 0;
           if (b.type === 'cue') {
@@ -58,10 +166,18 @@ function stepPhysics(balls, shotEvents) {
 
       // Отскок от бортов (только если шар не входит в створ лузы)
       if (!isNearPocket(b.x, b.y)) {
-        if (b.x < R + CUSHION) { b.x = R + CUSHION; b.vx *= -0.85; }
-        if (b.x > W - R - CUSHION) { b.x = W - R - CUSHION; b.vx *= -0.85; }
-        if (b.y < R + CUSHION) { b.y = R + CUSHION; b.vy *= -0.85; }
-        if (b.y > H - R - CUSHION) { b.y = H - R - CUSHION; b.vy *= -0.85; }
+        if (b.x < R + CUSHION) {
+          b.x = R + CUSHION;
+          SoundFX.playCushionHit(Math.abs(b.vx)); b.vx *= -0.85; }
+        if (b.x > W - R - CUSHION) {
+          b.x = W - R - CUSHION;
+          SoundFX.playCushionHit(Math.abs(b.vx)); b.vx *= -0.85; }
+        if (b.y < R + CUSHION) {
+          b.y = R + CUSHION;
+          SoundFX.playCushionHit(Math.abs(b.vy)); b.vy *= -0.85; }
+        if (b.y > H - R - CUSHION) {
+          b.y = H - R - CUSHION;
+          SoundFX.playCushionHit(Math.abs(b.vy)); b.vy *= -0.85; }
       }
     }
 
@@ -99,6 +215,11 @@ function stepPhysics(balls, shotEvents) {
           b1.vy = vy1 * cos + vx2 * sin;
           b2.vx = vx1 * cos - vy2 * sin;
           b2.vy = vy2 * cos + vx1 * sin;
+
+          if (vx1 > vx2) {
+            SoundFX.playBallClack(vx1 - vx2);
+          }
+
         }
       }
     }
