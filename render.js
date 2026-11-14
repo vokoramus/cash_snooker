@@ -34,7 +34,6 @@ function updateUI() {
   }
 }
 
-// Точный расчёт касания битка с первым шаром или бортом
 function traceAim(cue, angle) {
   const dx = Math.cos(angle);
   const dy = Math.sin(angle);
@@ -56,11 +55,10 @@ function traceAim(cue, angle) {
 
   for (let b of balls) {
     if (!b.active || b.type === 'cue') continue;
-    // Вектор от битка к центру шара
     const toBallX = b.x - cue.x;
     const toBallY = b.y - cue.y;
     const proj = toBallX * dx + toBallY * dy;
-    if (proj <= 0) continue; // Шар позади удара
+    if (proj <= 0) continue;
 
     const perpSq = (toBallX * toBallX + toBallY * toBallY) - proj * proj;
     if (perpSq < hitDistSq) {
@@ -80,13 +78,11 @@ function traceAim(cue, angle) {
   };
 }
 
-// Отрисовка траектории прицельного шара (с 1 отскоком от борта)
-function drawTargetTrajectory(startX, startY, dirX, dirY, isLegal) {
+function drawBounceRay(startX, startY, dirX, dirY, color, maxLen, dashPattern) {
   const minX = R + CUSHION;
   const maxX = W - R - CUSHION;
   const minY = R + CUSHION;
   const maxY = H - R - CUSHION;
-  const maxLen = 500;
 
   let tWall = Infinity;
   let hitVertical = false;
@@ -108,9 +104,9 @@ function drawTargetTrajectory(startX, startY, dirX, dirY, isLegal) {
   }
 
   ctx.save();
-  ctx.strokeStyle = isLegal ? '#00e676' : '#ff5252';
+  ctx.strokeStyle = color;
   ctx.lineWidth = 2;
-  ctx.setLineDash([6, 4]);
+  ctx.setLineDash(dashPattern || [6, 4]);
 
   if (tWall >= maxLen) {
     ctx.beginPath();
@@ -163,7 +159,7 @@ function draw() {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Лузы (врезаны в борта)
+  // Лузы
   ctx.fillStyle = '#0a0a0a';
   for (let p of POCKETS) {
     ctx.beginPath();
@@ -191,17 +187,20 @@ function draw() {
     }
   }
 
-  // Прицел, траектория прицельного и кий
+  // Прицел, траектория прицельного, отскок битка и кий
   if (isAiming) {
     let cue = balls.find(b => b.type === 'cue');
     let dx = cue.x - aimEnd.x;
     let dy = cue.y - aimEnd.y;
-    let power = Math.min(Math.hypot(dx, dy), 180);
+    let dist = Math.hypot(dx, dy);
+    let power = Math.min(dist, 180);
     let angle = Math.atan2(dy, dx);
+    const dirX = Math.cos(angle);
+    const dirY = Math.sin(angle);
 
     const aimInfo = traceAim(cue, angle);
 
-    // 1. Линия пути битка
+    // 1. Линия пути битка до точки касания
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.lineWidth = 1.5;
@@ -221,26 +220,66 @@ function draw() {
     ctx.stroke();
     ctx.restore();
 
-    // 3. Будущая траектория прицельного шара
+    // 3. Траектория прицельного шара и отскок битка после соударения
     if (aimInfo.hitBall) {
       const target = aimInfo.hitBall;
       const nx = target.x - aimInfo.ghostX;
       const ny = target.y - aimInfo.ghostY;
       const len = Math.hypot(nx, ny);
       if (len > 0) {
+        const ux = nx / len;
+        const uy = ny / len;
         const isLegal = boughtColor
           ? target.type === boughtColor
           : target.type === 'red';
-        drawTargetTrajectory(target.x, target.y, nx / len, ny / len, isLegal);
+
+        drawBounceRay(
+          target.x,
+          target.y,
+          ux,
+          uy,
+          isLegal ? '#00e676' : '#ff5252',
+          500,
+          [6, 4]
+        );
+
+        let tx = -uy;
+        let ty = ux;
+        if (dirX * tx + dirY * ty < 0) {
+          tx = -tx;
+          ty = -ty;
+        }
+        const tangentSpeedFactor = Math.abs(dirX * tx + dirY * ty);
+        if (tangentSpeedFactor > 0.05) {
+          drawBounceRay(
+            aimInfo.ghostX,
+            aimInfo.ghostY,
+            tx,
+            ty,
+            '#4fc3f7',
+            260,
+            [3, 4]
+          );
+        }
       }
+    } else {
+      drawBounceRay(
+        aimInfo.ghostX,
+        aimInfo.ghostY,
+        dirX,
+        dirY,
+        'rgba(79, 195, 247, 0.7)',
+        260,
+        [3, 4]
+      );
     }
 
     // 4. Кий
     ctx.strokeStyle = '#d7ccc8';
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(cue.x - Math.cos(angle) * (R + 5 + power * 0.2), cue.y - Math.sin(angle) * (R + 5 + power * 0.2));
-    ctx.lineTo(cue.x - Math.cos(angle) * (R + 85 + power * 0.2), cue.y - Math.sin(angle) * (R + 85 + power * 0.2));
+    ctx.moveTo(cue.x - dirX * (R + 5 + power * 0.2), cue.y - dirY * (R + 5 + power * 0.2));
+    ctx.lineTo(cue.x - dirX * (R + 85 + power * 0.2), cue.y - dirY * (R + 85 + power * 0.2));
     ctx.stroke();
   }
 
