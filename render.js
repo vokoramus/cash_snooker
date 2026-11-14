@@ -8,24 +8,68 @@ const CANCEL_RADIUS = R + 5; // Радиус возврата к битку дл
 function updateUI() {
   for (let i = 0; i < 2; i++) {
     const scoreEl = document.getElementById(`p${i + 1}-score`);
+    const debtEl = document.getElementById(`p${i + 1}-debt`);
+
     if (scoreEl) {
       scoreEl.innerText = getScore(i);
 
+      // Находим или оборачиваем блок "Долг", чтобы управлять его позицией и прозрачностью
+      let debtWrap = document.getElementById(`p${i + 1}-debt-wrap`);
+      if (!debtWrap && debtEl && debtEl.parentElement) {
+        debtWrap = document.createElement('span');
+        debtWrap.id = `p${i + 1}-debt-wrap`;
+        debtWrap.className = 'debt-badge';
+        debtWrap.innerHTML = ` | Долг: <strong id="p${i + 1}-debt">0</strong>`;
+
+        // Удаляем старый текстовый узел " | Долг: " и старый span из шапки
+        const parent = debtEl.parentElement;
+        const nodes = Array.from(parent.childNodes);
+        nodes.forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('Долг')) {
+            parent.removeChild(node);
+          }
+        });
+        parent.removeChild(debtEl);
+        parent.appendChild(debtWrap);
+      }
+
+      // Создаём или находим "Счёт 2" и ставим его строго ПЕРЕД блоком "Долг"
       let score2Wrap = document.getElementById(`p${i + 1}-score2-wrap`);
       if (!score2Wrap && scoreEl.parentElement) {
         score2Wrap = document.createElement('span');
         score2Wrap.id = `p${i + 1}-score2-wrap`;
         score2Wrap.className = 'score2-badge';
         score2Wrap.innerHTML = ` | Счёт 2: <strong id="p${i + 1}-score2">0</strong>`;
-        scoreEl.parentElement.appendChild(score2Wrap);
+
+        const targetDebtWrap = document.getElementById(`p${i + 1}-debt-wrap`);
+        if (targetDebtWrap && targetDebtWrap.parentElement === scoreEl.parentElement) {
+          scoreEl.parentElement.insertBefore(score2Wrap, targetDebtWrap);
+        } else {
+          scoreEl.parentElement.appendChild(score2Wrap);
+        }
       }
+
       const score2El = document.getElementById(`p${i + 1}-score2`);
       if (score2El) {
         score2El.innerText = getScoreDouble(i);
       }
     }
 
-    document.getElementById(`p${i + 1}-debt`).innerText = players[i].debt;
+    const updatedDebtEl = document.getElementById(`p${i + 1}-debt`);
+    const updatedDebtWrap = document.getElementById(`p${i + 1}-debt-wrap`);
+    if (updatedDebtEl) {
+      updatedDebtEl.innerText = players[i].debt;
+    }
+    if (updatedDebtWrap) {
+      if (players[i].debt === 0) {
+        updatedDebtWrap.classList.add('debt-zero');
+        updatedDebtWrap.classList.remove('debt-active');
+      } else {
+        updatedDebtWrap.classList.remove('debt-zero');
+        updatedDebtWrap.classList.add('debt-active');
+      }
+    }
+
     let limitText = hasActiveColors() ? `${players[i].reds}/8` : `${players[i].reds} (без лимита)`;
     document.getElementById(`p${i + 1}-reds-count`).innerText = limitText;
 

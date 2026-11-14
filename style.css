@@ -129,3 +129,18 @@ canvas {
   font-weight: 800;
   font-size: 1.15em;
 }
+
+.debt-badge {
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.debt-zero {
+  opacity: 0.35;
+  color: #90a4ae;
+}
+
+.debt-active {
+  opacity: 1;
+  color: #ff5252;
+  font-weight: bold;
+}
