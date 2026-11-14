@@ -167,7 +167,7 @@ function draw() {
   ctx.fillStyle = '#0a0a0a';
   for (let p of POCKETS) {
     ctx.beginPath();
-    ctx.arc(p.x, p.y, POCKET_R, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
     ctx.fill();
   }
 

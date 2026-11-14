@@ -1,19 +1,26 @@
 const W = 800;
 const H = 400;
 const R = 9;
-const POCKET_R = 23; // Увеличенная приёмистость луз для тестов
-const CUSHION = 10;  // Ширина борта
+const CUSHION = 10;
 const FRICTION = 0.985;
 const SUBSTEPS = 12;
 
 const POCKETS = [
-  { x: 14, y: 14 }, { x: W / 2, y: 8 }, { x: W - 14, y: 14 },
-  { x: 14, y: H - 14 }, { x: W / 2, y: H - 8 }, { x: W - 14, y: H - 14 }
+  { x: 14, y: 14, r: 23, type: 'corner' },
+  { x: W / 2, y: -4, r: 20, type: 'side' },
+  { x: W - 14, y: 14, r: 23, type: 'corner' },
+  { x: 14, y: H - 14, r: 23, type: 'corner' },
+  { x: W / 2, y: H + 4, r: 20, type: 'side' },
+  { x: W - 14, y: H - 14, r: 23, type: 'corner' }
 ];
 
 function isNearPocket(x, y) {
   for (let p of POCKETS) {
-    if (Math.hypot(x - p.x, y - p.y) < POCKET_R + 4) return true;
+    if (p.type === 'corner') {
+      if (Math.hypot(x - p.x, y - p.y) < p.r + 4) return true;
+    } else {
+      if (Math.abs(x - p.x) < 15 && (y < R + CUSHION + 2 || y > H - R - CUSHION - 2)) return true;
+    }
   }
   return false;
 }
@@ -34,7 +41,7 @@ function stepPhysics(balls, shotEvents) {
 
       // Проверка падения в лузу
       for (let p of POCKETS) {
-        if (Math.hypot(b.x - p.x, b.y - p.y) < POCKET_R) {
+        if (Math.hypot(b.x - p.x, b.y - p.y) < p.r) {
           b.active = false;
           b.vx = 0;
           b.vy = 0;
