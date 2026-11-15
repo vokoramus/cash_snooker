@@ -73,7 +73,7 @@
 /* Горизонтальный (альбомный) режим смартфона: всё строго в 1 строку */
 @media (max-height: 560px) and (orientation: landscape) {
   body {
-    padding: 3px 6px 12px 6px;
+    padding: 3px 6px 10px 6px;
   }
 
   h2 {
@@ -97,24 +97,41 @@
 
   .player-box {
     width: 49.5%;
+    min-width: 0;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: nowrap;
     gap: 4px;
-    padding: 3px 5px;
+    padding: 3px 6px;
     font-size: 10px;
     line-height: 1.1;
     white-space: nowrap;
     box-sizing: border-box;
   }
 
-  .player-box > div {
+  /* Прячем длинные слова "Полка красных" и "Купленные цветные", оставляя счётчик 1/8 и сами шарики */
+  .player-box > div:not(:first-child) {
+    font-size: 0;
     display: inline-flex;
     align-items: center;
-    flex-wrap: nowrap;
-    gap: 3px;
+    gap: 2px;
     margin: 0;
+  }
+
+  .player-box > div:not(:first-child) span[id$="-reds-count"] {
+    font-size: 10px;
+    color: #b0bec5;
+    margin-right: 2px;
+  }
+
+  .player-box > div:not(:first-child) span[id$="-reds-count"]::before {
+    content: "[";
+  }
+
+  .player-box > div:not(:first-child) span[id$="-reds-count"]::after {
+    content: "]";
   }
 
   .shelf {
@@ -130,6 +147,7 @@
     height: 8px;
   }
 
+  /* Прячем текст "Купить шар:" на панели кнопок, оставляя сами кнопки */
   .controls {
     width: 98vw;
     max-width: 980px;
@@ -138,13 +156,19 @@
     margin-bottom: 4px;
     flex-wrap: nowrap;
     justify-content: center;
-    font-size: 11px;
+    font-size: 0;
   }
 
   .controls button {
-    padding: 3px 7px;
-    font-size: 11px;
+    padding: 3px 6px;
+    font-size: 10px;
     white-space: nowrap;
+  }
+
+  #btn-yellow, #btn-green, #btn-brown, #btn-blue, #btn-pink, #btn-black {
+    min-width: 24px;
+    padding: 3px 6px;
+    font-size: 11px;
   }
 
   canvas {
