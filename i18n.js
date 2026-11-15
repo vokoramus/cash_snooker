@@ -24,7 +24,7 @@ const I18N = {
       black: 'Чёрн.'
     },
     statusStart: 'Ход Игрока 1. Поставьте биток в секторе D или тяните для удара.',
-    statusBought: (p, color, cost) => `Игрок ${p} купил ${color} за ${cost} красных! Бейте по нему.`,
+    statusBought: (p, color, cost) => `Игрок ${p} заказал ${color} (спишется ${cost} кр. при забитии, промах: -1 кр.).`,
     statusFoul: (p) => `ФОЛ! Штраф 1 красный. Ход переходит к Игроку ${p}.`,
     statusMiss: (p) => `Промах. Ход Игрока ${p}.`,
     statusContinue: (p) => `Отличный удар! Игрок ${p} продолжает серию.`,
@@ -57,7 +57,7 @@ const I18N = {
       black: 'Black'
     },
     statusStart: 'Player 1 turn. Place cue ball in the D or drag to shoot.',
-    statusBought: (p, color, cost) => `Player ${p} bought ${color} for ${cost} reds! Hit it first.`,
+    statusBought: (p, color, cost) => `Player ${p} called ${color} (costs ${cost} reds if potted, miss: -1 red).`,
     statusFoul: (p) => `FOUL! 1 red penalty. Turn passes to Player ${p}.`,
     statusMiss: (p) => `Miss. Player ${p} turn.`,
     statusContinue: (p) => `Great pot! Player ${p} continues the break.`,

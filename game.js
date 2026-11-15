@@ -77,15 +77,23 @@ function getScoreDouble(idx) {
 }
 
 function buyColor(colorKey) {
-  if (isMoving || boughtColor || isRespotRed) return;
+  if (isMoving || isRespotRed) return;
+
+  // Повторный клик по уже заказанному шару отменяет заказ до удара
+  if (boughtColor === colorKey) {
+    boughtColor = null;
+    setGameStatus(() => t('statusStart'));
+    updateUI();
+    return;
+  }
+
   let p = players[turn];
   let cost = COLORS_DATA[colorKey].val;
   let targetBall = balls.find(b => b.type === colorKey && b.active);
   if (!targetBall || p.reds < cost) return;
 
-  p.reds -= cost;
+  // Оплату НЕ списываем до удара — только фиксируем заказ
   boughtColor = colorKey;
-  pendingRedsToTable += cost;
   setGameStatus(() => t('statusBought', turn + 1, I18N[currentLang].colors[colorKey], cost));
   updateUI();
 }
@@ -163,6 +171,8 @@ function handleShotEnd() {
   }
 
   let validPot = false;
+  let boughtColorPotted = false;
+
   shotEvents.potted.forEach(b => {
     if (b.type === 'red') {
       if (boughtColor) {
@@ -184,6 +194,7 @@ function handleShotEnd() {
       if (boughtColor === b.type) {
         p.colors.push(b);
         validPot = true;
+        boughtColorPotted = true;
       } else {
         foul = true;
         b.active = true;
@@ -195,11 +206,41 @@ function handleShotEnd() {
     }
   });
 
+  // 1. Если заказанный цветной ЗАБИТ без фола — списываем его номинал сейчас
+  if (boughtColor && boughtColorPotted && !foul) {
+    let cost = COLORS_DATA[boughtColor].val;
+    p.reds -= cost;
+    pendingRedsToTable += cost;
+  }
+
+  // 2. Если цветной был заказан, но НЕ забит (и не было фола) — штраф 1 красный за неудачный заказ
+  if (boughtColor && !boughtColorPotted && !foul) {
+    if (p.reds > 0) {
+      p.reds--;
+      pendingRedsToTable++;
+    } else {
+      p.debt++;
+    }
+  }
+
   spawnRedsOnLine(pendingRedsToTable);
   pendingRedsToTable = 0;
 
+  // 3. Если был фол — штраф 1 красный (номинал заказанного цветного не сгорает)
   if (foul) {
     validPot = false;
+    // Если заказанный цветной успел упасть в одном ударе с фолом — возвращаем его на точку
+    if (boughtColorPotted && boughtColor) {
+      let cb = balls.find(b => b.type === boughtColor);
+      if (cb) {
+        p.colors = p.colors.filter(c => c !== cb);
+        cb.active = true;
+        cb.x = COLORS_DATA[boughtColor].x;
+        cb.y = COLORS_DATA[boughtColor].y;
+        cb.vx = 0;
+        cb.vy = 0;
+      }
+    }
     if (p.reds > 0) {
       p.reds--;
       spawnRedsOnLine(1);

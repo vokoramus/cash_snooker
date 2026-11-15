@@ -130,7 +130,9 @@ function updateUI() {
   for (let key in COLORS_DATA) {
     let btn = document.getElementById(`btn-${key}`);
     let ballActive = balls.some(b => b.type === key && b.active);
-    btn.disabled = isMoving || boughtColor !== null || !ballActive || curP.reds < COLORS_DATA[key].val;
+    // Разрешаем клик по уже выбранному шару (для отмены), остальные блокируем во время заказа
+    let lockedByOtherChoice = boughtColor !== null && boughtColor !== key;
+    btn.disabled = isMoving || lockedByOtherChoice || !ballActive || curP.reds < COLORS_DATA[key].val;
   }
 }
 
