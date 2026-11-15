@@ -54,6 +54,10 @@ function resetGame() {
   setGameStatus(() => t('statusStart'));
 
   if (typeof updateUI === 'function') updateUI();
+
+  if (!window._remoteAction && typeof Multiplayer !== 'undefined') {
+    Multiplayer.send({ type: 'reset_game' });
+  }
 }
 
 function setStatus(msg) {
@@ -96,6 +100,11 @@ function buyColor(colorKey) {
   boughtColor = colorKey;
   setGameStatus(() => t('statusBought', turn + 1, I18N[currentLang].colors[colorKey], cost));
   updateUI();
+
+  if (!window._remoteAction && typeof Multiplayer !== 'undefined') {
+    Multiplayer.send({ type: 'buy_color', colorKey: boughtColor });
+  }
+
 }
 
 function spawnRedsOnLine(count) {
@@ -293,4 +302,9 @@ function handleShotEnd() {
   }
 
   updateUI();
+
+  if (typeof Multiplayer !== 'undefined' && Multiplayer.isOnline() && Multiplayer.isMyTurn()) {
+    Multiplayer.send({ type: 'sync_state', snapshot: Multiplayer.getFullSnapshot() });
+  }
+
 }

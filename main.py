@@ -9,6 +9,10 @@ app = FastAPI(title="Cash Snooker Server")
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 
+"""запуск локально:
+uvicorn main:app --reload --port 8001
+"""
+
 
 class RoomManager:
     def __init__(self) -> None:

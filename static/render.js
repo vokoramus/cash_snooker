@@ -127,12 +127,14 @@ function updateUI() {
   }
 
   let curP = players[turn];
+  const notMyTurn = typeof Multiplayer !== 'undefined' && !Multiplayer.isMyTurn();
   for (let key in COLORS_DATA) {
     let btn = document.getElementById(`btn-${key}`);
     let ballActive = balls.some(b => b.type === key && b.active);
     // Разрешаем клик по уже выбранному шару (для отмены), остальные блокируем во время заказа
     let lockedByOtherChoice = boughtColor !== null && boughtColor !== key;
-    btn.disabled = isMoving || lockedByOtherChoice || !ballActive || curP.reds < COLORS_DATA[key].val;
+
+    btn.disabled = isMoving || notMyTurn || lockedByOtherChoice || !ballActive || curP.reds < COLORS_DATA[key].val;
   }
 }
 
@@ -594,6 +596,9 @@ function clampBallToTable(ball, x, y) {
 }
 
 function onPointerDown(e) {
+
+  if (typeof Multiplayer !== 'undefined' && !Multiplayer.isMyTurn()) return;
+
   if (isMoving) return;
 
   if (e.button === 2) {
@@ -624,11 +629,13 @@ function onPointerDown(e) {
   }
 
   let cue = balls.find(b => b.type === 'cue');
-
+  // Постановка битка в секторе D
   if (ballInHand && pos.x <= 180 && Math.hypot(pos.x - 180, pos.y - H / 2) <= 55) {
     cue.x = pos.x;
     cue.y = pos.y;
     ballInHand = false;
+    if (typeof Multiplayer !== 'undefined') Multiplayer.send({ type: 'cue_place', x: cue.x, y: cue.y });
+
     return;
   }
 
@@ -679,6 +686,11 @@ function onPointerUp(e) {
     shotEvents = { firstHit: null, potted: [], cuePotted: false };
     ballInHand = false;
     isMoving = true;
+
+    if (typeof Multiplayer !== 'undefined') {
+      Multiplayer.send({ type: 'shot', cueX: cue.x, cueY: cue.y, angle, power });
+    }
+
     updateUI();
   }
 }
