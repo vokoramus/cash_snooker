@@ -647,11 +647,13 @@ function onPointerDown(e) {
 
 function onPointerMove(e) {
   if (draggedBall) {
+    if (e.cancelable) e.preventDefault();
     let pos = getPointerPos(e);
     clampBallToTable(draggedBall, pos.x, pos.y);
     return;
   }
   if (!isAiming) return;
+  if (e.cancelable) e.preventDefault();
   aimEnd = getPointerPos(e);
 }
 

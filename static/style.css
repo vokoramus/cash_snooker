@@ -6,9 +6,11 @@ body {
   flex-direction: column;
   align-items: center;
   margin: 0;
-  padding: 15px;
+  padding: 15px 15px 30px 15px;
   user-select: none;
-  touch-action: none;
+  touch-action: pan-y;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 h2 {
@@ -45,6 +47,7 @@ h2 {
   border-radius: 6px;
   border: 2px solid transparent;
   transition: 0.2s;
+  font-size: 14px;
 }
 
 .active-turn {
@@ -82,6 +85,7 @@ h2 {
   padding: 10px;
   border-radius: 8px;
   box-sizing: border-box;
+  font-size: 14px;
 }
 
 button {
@@ -109,10 +113,12 @@ canvas {
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
   cursor: crosshair;
-  max-width: 95vw;
+  touch-action: none;
+  max-width: calc(95vw - 36px);
   height: auto;
 }
 
+/* Подсветка счетов и затемнение нулевого долга */
 #p1-score, #p2-score {
   color: #69f0ae;
   font-weight: 800;
@@ -145,6 +151,7 @@ canvas {
   font-weight: bold;
 }
 
+/* Контейнер стола и вертикальный прогресс-бар силы справа */
 .table-stage {
   display: flex;
   align-items: center;
@@ -192,4 +199,144 @@ canvas {
   color: #f0f0f0;
   min-width: 34px;
   text-align: center;
+}
+
+/* Вертикальный экран смартфона (до 768px): компактные панели в 2 строки */
+@media (max-width: 768px) {
+  body {
+    padding: 6px 4px 20px 4px;
+  }
+
+  h2 {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  #status, #mp-banner {
+    font-size: 11px;
+    margin-bottom: 4px;
+    padding: 2px 8px;
+  }
+
+  .hud {
+    padding: 5px 6px;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+
+  .player-box {
+    width: 49%;
+    padding: 4px 6px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .shelf {
+    margin-top: 3px;
+    min-height: 13px;
+    gap: 2px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .controls {
+    padding: 5px 6px;
+    gap: 4px;
+    margin-bottom: 6px;
+    font-size: 11px;
+  }
+
+  .controls button {
+    padding: 4px 7px;
+    font-size: 11px;
+  }
+
+  canvas {
+    border-width: 7px;
+    max-width: calc(98vw - 30px);
+  }
+
+  .power-bar-track {
+    width: 12px;
+    height: 150px;
+  }
+}
+
+/* Горизонтальный (альбомный) режим смартфона: всё в 1 строку, стол во весь экран */
+@media (max-height: 540px) and (orientation: landscape) {
+  body {
+    padding: 4px 6px 14px 6px;
+  }
+
+  h2 {
+    display: none; /* Прячем крупный заголовок в альбомном режиме ради высоты стола */
+  }
+
+  #status, #mp-banner {
+    font-size: 11px;
+    margin-bottom: 3px;
+    padding: 1px 8px;
+    min-height: 14px;
+  }
+
+  .hud {
+    padding: 3px 8px;
+    margin-bottom: 3px;
+    align-items: center;
+  }
+
+  .player-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 3px 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .shelf {
+    margin-top: 0;
+    min-height: 12px;
+    flex-wrap: nowrap;
+  }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+  }
+
+  .controls {
+    padding: 3px 6px;
+    gap: 4px;
+    margin-bottom: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto; /* Если кнопок много — горизонтальный скролл в 1 строку */
+    justify-content: flex-start;
+  }
+
+  .controls button {
+    padding: 3px 7px;
+    font-size: 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  canvas {
+    border-width: 6px;
+    max-height: 68vh;
+    width: auto;
+    max-width: calc(96vw - 32px);
+  }
+
+  .power-bar-track {
+    width: 12px;
+    height: 58vh;
+    max-height: 170px;
+  }
 }
