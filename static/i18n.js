@@ -45,7 +45,8 @@ const I18N = {
     statusRespotMiss: (p) => `Промах на Re-spot Red. Ход переходит к Игроку ${p}.`,
     statusRespotFoul: (s1, s2, d1, d2, w) => `ФОЛ на Re-spot Red! Счёт ${s1}:${s2}. Победил Игрок ${w}!`,
     statusRespotPot: (s1, s2, d1, d2, w) => `RE-SPOT RED ЗАБИТ! Счёт ${s1}:${s2}. Победил Игрок ${w}!`,
-    statusWin: (s1, s2, d1, d2, w) => `ПАРТИЯ ОКОНЧЕНА! Счёт ${s1}:${s2}. Победил Игрок ${w}!`
+    statusWin: (s1, s2, w) => `ПАРТИЯ ОКОНЧЕНА! Счёт ${s1}:${s2}. Победил Игрок ${w}!`,
+    statusEarlyWin: (s1, s2, w) => `ДОСРОЧНАЯ ПОБЕДА! Оставшихся красных не хватит. Счёт ${s1}:${s2}. Победил Игрок ${w}!`,
   },
   en: {
     title: '🎱 CASH SNOOKER',
@@ -91,7 +92,9 @@ const I18N = {
     statusRespotMiss: (p) => `Miss on Re-spot Red. Turn passes to Player ${p}.`,
     statusRespotFoul: (s1, s2, d1, d2, w) => `FOUL on Re-spot Red! Score ${s1}:${s2}. Player ${w} wins!`,
     statusRespotPot: (s1, s2, d1, d2, w) => `RE-SPOT RED POTTED! Score ${s1}:${s2}. Player ${w} wins!`,
-    statusWin: (s1, s2, d1, d2, w) => `FRAME OVER! Score ${s1}:${s2}. Player ${w} wins!`
+    statusWin: (s1, s2, w) => `FRAME OVER! Score ${s1}:${s2}. Player ${w} wins!`,
+    statusEarlyWin: (s1, s2, w) => `EARLY VICTORY! Not enough reds left to catch up. Score ${s1}:${s2}. Player ${w} wins!`,
+
   }
 };
 

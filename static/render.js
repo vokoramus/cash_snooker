@@ -44,7 +44,9 @@ function updateUI() {
     const debtEl = document.getElementById(`p${i + 1}-debt`);
 
     if (scoreEl) {
-      scoreEl.innerText = getScore(i);
+      const curScore = getScore(i);
+      scoreEl.innerText = curScore;
+      scoreEl.style.color = curScore < 0 ? '#ff5252' : '#69f0ae';
 
       if (scoreEl.previousSibling && scoreEl.previousSibling.nodeType === Node.TEXT_NODE) {
         scoreEl.previousSibling.textContent = ` | ${t('score')}: `;

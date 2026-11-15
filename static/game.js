@@ -71,7 +71,29 @@ function hasActiveColors() {
 function getScore(idx) {
   let p = players[idx];
   let cSum = p.colors.reduce((acc, c) => acc + c.val * 2, 0);
-  return cSum + p.reds + respotBonus[idx];
+  return cSum + p.reds - p.debt + respotBonus[idx];
+}
+
+function checkEarlyWin() {
+  // Пока есть цветные — можно ставить снукеры и отыгрываться
+  if (hasActiveColors()) return null;
+
+  const s0 = getScore(0);
+  const s1 = getScore(1);
+  if (s0 === s1) return null;
+
+  const leaderIdx = s0 > s1 ? 0 : 1;
+  const trailerIdx = 1 - leaderIdx;
+  const leaderScore = leaderIdx === 0 ? s0 : s1;
+  const trailerScore = trailerIdx === 0 ? s0 : s1;
+
+  // Без цветных снукер не поставить — потенциал равен только красным на столе
+  const redsOnTable = balls.filter(b => b.active && b.type === 'red').length;
+
+  if (trailerScore + redsOnTable < leaderScore) {
+    return { winnerIdx: leaderIdx, s0, s1 };
+  }
+  return null;
 }
 
 function buyColor(colorKey) {
@@ -286,6 +308,17 @@ function handleShotEnd() {
       updateUI();
       return;
     }
+  }
+
+  // Проверка на досрочную победу
+  const earlyResult = checkEarlyWin();
+  if (earlyResult) {
+    setGameStatus(() => t('statusEarlyWin', earlyResult.s0, earlyResult.s1, earlyResult.winnerIdx + 1));
+    updateUI();
+    if (typeof Multiplayer !== 'undefined' && Multiplayer.isOnline() && Multiplayer.getMyIndex() === shooterIdx) {
+      Multiplayer.send({ type: 'sync_state', snapshot: Multiplayer.getFullSnapshot() });
+    }
+    return;
   }
 
   // Обычный ход (фол / промах / серия)
