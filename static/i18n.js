@@ -30,9 +30,9 @@ const I18N = {
     statusContinue: (p) => `Отличный удар! Игрок ${p} продолжает серию.`,
     statusTie: (p) => `НИЧЬЯ 21:21! Объявляется RE-SPOT RED! Игрок ${p} бьёт с руки.`,
     statusRespotMiss: (p) => `Промах на Re-spot Red. Ход переходит к Игроку ${p}.`,
-    statusRespotFoul: (s1, s2, d1, d2, w) => `ФОЛ на Re-spot Red! Счёт ${s1}:${s2} (Счёт 2: ${d1}:${d2}). Победил Игрок ${w}!`,
-    statusRespotPot: (s1, s2, d1, d2, w) => `RE-SPOT RED ЗАБИТ! Счёт ${s1}:${s2} (Счёт 2: ${d1}:${d2}). Победил Игрок ${w}!`,
-    statusWin: (s1, s2, d1, d2, w) => `ПАРТИЯ ОКОНЧЕНА! Счёт ${s1}:${s2} (Счёт 2: ${d1}:${d2}). Победил Игрок ${w}!`
+    statusRespotFoul: (s1, s2, d1, d2, w) => `ФОЛ на Re-spot Red! Счёт ${s1}:${s2}. Победил Игрок ${w}!`,
+    statusRespotPot: (s1, s2, d1, d2, w) => `RE-SPOT RED ЗАБИТ! Счёт ${s1}:${s2}. Победил Игрок ${w}!`,
+    statusWin: (s1, s2, d1, d2, w) => `ПАРТИЯ ОКОНЧЕНА! Счёт ${s1}:${s2}. Победил Игрок ${w}!`
   },
   en: {
     title: '🎱 CASH SNOOKER',
@@ -63,9 +63,9 @@ const I18N = {
     statusContinue: (p) => `Great pot! Player ${p} continues the break.`,
     statusTie: (p) => `TIE 21:21! RE-SPOT RED! Player ${p} plays ball-in-hand.`,
     statusRespotMiss: (p) => `Miss on Re-spot Red. Turn passes to Player ${p}.`,
-    statusRespotFoul: (s1, s2, d1, d2, w) => `FOUL on Re-spot Red! Score ${s1}:${s2} (Score 2: ${d1}:${d2}). Player ${w} wins!`,
-    statusRespotPot: (s1, s2, d1, d2, w) => `RE-SPOT RED POTTED! Score ${s1}:${s2} (Score 2: ${d1}:${d2}). Player ${w} wins!`,
-    statusWin: (s1, s2, d1, d2, w) => `FRAME OVER! Score ${s1}:${s2} (Score 2: ${d1}:${d2}). Player ${w} wins!`
+    statusRespotFoul: (s1, s2, d1, d2, w) => `FOUL on Re-spot Red! Score ${s1}:${s2}. Player ${w} wins!`,
+    statusRespotPot: (s1, s2, d1, d2, w) => `RE-SPOT RED POTTED! Score ${s1}:${s2}. Player ${w} wins!`,
+    statusWin: (s1, s2, d1, d2, w) => `FRAME OVER! Score ${s1}:${s2}. Player ${w} wins!`
   }
 };
 
@@ -98,12 +98,12 @@ function toggleLanguage() {
   const langBtn = document.getElementById('btn-lang');
   if (langBtn) langBtn.innerText = currentLang === 'ru' ? 'EN' : 'RU';
 
-  for (let key in COLORS_DATA) {
-    const btn = document.getElementById(`btn-${key}`);
-    if (btn) {
-      btn.innerText = `${I18N[currentLang].colors[key]} (${COLORS_DATA[key].val})`;
-    }
-  }
+//  for (let key in COLORS_DATA) {
+//    const btn = document.getElementById(`btn-${key}`);
+//    if (btn) {
+//      btn.innerText = `${I18N[currentLang].colors[key]} (${COLORS_DATA[key].val})`;
+//    }
+//  }
 
   replaceTextNodes(document.querySelector('.controls'), ['Купить шар', 'Buy ball'], `${t('buyLabel')} `);
 

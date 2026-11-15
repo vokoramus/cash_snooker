@@ -68,26 +68,6 @@ function updateUI() {
         parent.removeChild(debtEl);
         parent.appendChild(debtWrap);
       }
-
-      // Создаём или находим "Счёт 2" и ставим его строго ПЕРЕД блоком "Долг"
-      let score2Wrap = document.getElementById(`p${i + 1}-score2-wrap`);
-      if (!score2Wrap && scoreEl.parentElement) {
-        score2Wrap = document.createElement('span');
-        score2Wrap.id = `p${i + 1}-score2-wrap`;
-        score2Wrap.className = 'score2-badge';
-        score2Wrap.innerHTML = ` | ${t('score2')}: <strong id="p${i + 1}-score2">0</strong>`;
-
-        const targetDebtWrap = document.getElementById(`p${i + 1}-debt-wrap`);
-        if (targetDebtWrap && targetDebtWrap.parentElement === scoreEl.parentElement) {
-          scoreEl.parentElement.insertBefore(score2Wrap, targetDebtWrap);
-        } else {
-          scoreEl.parentElement.appendChild(score2Wrap);
-        }
-      }
-
-      if (score2Wrap) {
-        score2Wrap.innerHTML = ` | ${t('score2')}: <strong id="p${i + 1}-score2">${getScoreDouble(i)}</strong>`;
-      }
     }
 
     const updatedDebtWrap = document.getElementById(`p${i + 1}-debt-wrap`);
@@ -120,7 +100,7 @@ function updateUI() {
     let cDiv = document.getElementById(`p${i + 1}-colors`);
     cDiv.innerHTML = '';
     players[i].colors.forEach(c => {
-      cDiv.innerHTML += `<span class="dot" style="background:${c.hex}" title="${c.val} (2x: ${c.val * 2})"></span>`;
+      cDiv.innerHTML += `<span class="dot" style="background:${c.hex}" title="+${c.val * 2}"></span>`;
     });
 
     document.getElementById(`p${i + 1}-box`).className = `player-box ${turn === i ? 'active-turn' : ''}`;

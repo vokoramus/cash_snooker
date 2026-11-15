@@ -70,12 +70,6 @@ function hasActiveColors() {
 
 function getScore(idx) {
   let p = players[idx];
-  let cSum = p.colors.reduce((acc, c) => acc + c.val, 0);
-  return cSum + p.reds + respotBonus[idx];
-}
-
-function getScoreDouble(idx) {
-  let p = players[idx];
   let cSum = p.colors.reduce((acc, c) => acc + c.val * 2, 0);
   return cSum + p.reds + respotBonus[idx];
 }
@@ -160,7 +154,7 @@ function handleShotEnd() {
     if (foul) {
       let winnerIdx = 1 - turn;
       respotBonus[winnerIdx] = 1;
-      setGameStatus(() => t('statusRespotFoul', getScore(0), getScore(1), getScoreDouble(0), getScoreDouble(1), winnerIdx + 1));
+      setGameStatus(() => t('statusRespotFoul', getScore(0), getScore(1), winnerIdx + 1));
       updateUI();
       return;
     }
@@ -168,7 +162,7 @@ function handleShotEnd() {
     // Забитие на Re-spot Red
     if (redPotted) {
       respotBonus[turn] = 1;
-      setGameStatus(() => t('statusRespotPot', getScore(0), getScore(1), getScoreDouble(0), getScoreDouble(1), turn + 1));
+      setGameStatus(() => t('statusRespotPot', getScore(0), getScore(1), turn + 1));
       updateUI();
       return;
     }
@@ -287,7 +281,7 @@ function handleShotEnd() {
       return;
     } else {
       let winner = s1 > s2 ? "Игрок 1" : "Игрок 2";
-      setGameStatus(() => t('statusWin', s1, s2, getScoreDouble(0), getScoreDouble(1), s1 > s2 ? 1 : 2));
+      setGameStatus(() => t('statusWin', s1, s2, s1 > s2 ? 1 : 2));
       updateUI();
       return;
     }

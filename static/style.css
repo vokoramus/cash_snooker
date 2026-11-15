@@ -118,6 +118,17 @@ canvas {
   height: auto;
 }
 
+#btn-yellow, #btn-green, #btn-brown, #btn-blue, #btn-pink, #btn-black {
+  min-width: 30px;
+  padding: 5px 9px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+#btn-yellow {
+  color: #111;
+}
+
 /* Подсветка счетов и затемнение нулевого долга */
 #p1-score, #p2-score {
   color: #69f0ae;
@@ -201,7 +212,7 @@ canvas {
   text-align: center;
 }
 
-/* Вертикальный экран смартфона (до 768px): компактные панели в 2 строки */
+/* Вертикальный экран смартфона (до 768px) */
 @media (max-width: 768px) {
   body {
     padding: 6px 4px 20px 4px;
@@ -219,6 +230,7 @@ canvas {
   }
 
   .hud {
+    width: 98vw;
     padding: 5px 6px;
     gap: 4px;
     margin-bottom: 4px;
@@ -229,6 +241,7 @@ canvas {
     padding: 4px 6px;
     font-size: 11px;
     line-height: 1.25;
+    box-sizing: border-box;
   }
 
   .shelf {
@@ -243,6 +256,7 @@ canvas {
   }
 
   .controls {
+    width: 98vw;
     padding: 5px 6px;
     gap: 4px;
     margin-bottom: 6px;
@@ -250,7 +264,7 @@ canvas {
   }
 
   .controls button {
-    padding: 4px 7px;
+    padding: 4px 8px;
     font-size: 11px;
   }
 
@@ -265,14 +279,14 @@ canvas {
   }
 }
 
-/* Горизонтальный (альбомный) режим смартфона: всё в 1 строку, стол во весь экран */
-@media (max-height: 540px) and (orientation: landscape) {
+/* Горизонтальный (альбомный) режим смартфона */
+@media (max-height: 560px) and (orientation: landscape) {
   body {
     padding: 4px 6px 14px 6px;
   }
 
   h2 {
-    display: none; /* Прячем крупный заголовок в альбомном режиме ради высоты стола */
+    display: none;
   }
 
   #status, #mp-banner {
@@ -283,27 +297,35 @@ canvas {
   }
 
   .hud {
-    padding: 3px 8px;
-    margin-bottom: 3px;
-    align-items: center;
+    width: 98vw;
+    max-width: 960px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    gap: 8px;
   }
 
   .player-box {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: nowrap;
-    gap: 6px;
-    padding: 3px 6px;
+    width: 49%;
+    padding: 4px 6px;
     font-size: 11px;
-    white-space: nowrap;
-    overflow: hidden;
+    line-height: 1.2;
+    box-sizing: border-box;
+  }
+
+  /* В альбомном режиме ставим "Полка красных" и "Купленные цветные" в одну компактную строку под счётом */
+  .player-box > div {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-right: 8px;
   }
 
   .shelf {
+    display: inline-flex;
     margin-top: 0;
     min-height: 12px;
-    flex-wrap: nowrap;
+    gap: 2px;
   }
 
   .dot {
@@ -312,31 +334,31 @@ canvas {
   }
 
   .controls {
-    padding: 3px 6px;
-    gap: 4px;
+    width: 98vw;
+    max-width: 960px;
+    padding: 4px 8px;
+    gap: 5px;
     margin-bottom: 4px;
-    flex-wrap: nowrap;
-    overflow-x: auto; /* Если кнопок много — горизонтальный скролл в 1 строку */
-    justify-content: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 11px;
   }
 
   .controls button {
-    padding: 3px 7px;
+    padding: 4px 8px;
     font-size: 11px;
-    white-space: nowrap;
-    flex-shrink: 0;
   }
 
   canvas {
     border-width: 6px;
-    max-height: 68vh;
+    max-height: 66vh;
     width: auto;
     max-width: calc(96vw - 32px);
   }
 
   .power-bar-track {
     width: 12px;
-    height: 58vh;
+    height: 56vh;
     max-height: 170px;
   }
 }
