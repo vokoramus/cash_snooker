@@ -15,6 +15,19 @@ const I18N = {
     cancel: 'ОТМЕНА',
     newGame: 'Новая партия',
     moveBalls: '🖐 Двигать шары',
+
+    mpOnline: '🌐 Онлайн (1 на 1)',
+    mpLeave: '✖ Выйти в Single Mode',
+    mpRoom: 'Комната',
+    mpRole1: 'Вы: Игрок 1',
+    mpRole2: 'Вы: Игрок 2',
+    mpWait: 'Ожидание соперника (ссылка скопирована)...',
+    mpJoined: 'Соперник в комнате!',
+    mpPlaying: 'Матч идёт!',
+    mpLeft: 'Соперник отключился.',
+    mpFull: 'Комната уже заполнена (2/2). Вы играете локально.',
+    mpLost: 'Соединение с сервером потеряно.',
+
     colors: {
       yellow: 'Жёлт.',
       green: 'Зел.',
@@ -48,6 +61,19 @@ const I18N = {
     cancel: 'CANCEL',
     newGame: 'New Frame',
     moveBalls: '🖐 Move balls',
+
+    mpOnline: '🌐 Online (1v1)',
+    mpLeave: '✖ Exit to Single Mode',
+    mpRoom: 'Room',
+    mpRole1: 'You: Player 1',
+    mpRole2: 'You: Player 2',
+    mpWait: 'Waiting for opponent (link copied)...',
+    mpJoined: 'Opponent joined!',
+    mpPlaying: 'Match in progress!',
+    mpLeft: 'Opponent disconnected.',
+    mpFull: 'Room is full (2/2). Playing locally.',
+    mpLost: 'Connection to server lost.',
+
     colors: {
       yellow: 'Yellow',
       green: 'Green',
@@ -120,6 +146,11 @@ function toggleLanguage() {
   const moveBtn = document.getElementById('btn-move-mode');
   if (moveBtn) moveBtn.innerText = t('moveBalls');
 
+  if (typeof Multiplayer !== 'undefined' && typeof Multiplayer.refreshLang === 'function') {
+    Multiplayer.refreshLang();
+  }
+
   setGameStatus(lastStatusUpdater);
   if (typeof updateUI === 'function') updateUI();
+
 }

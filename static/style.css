@@ -114,7 +114,8 @@ canvas {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
   cursor: crosshair;
   touch-action: none;
-  max-width: calc(95vw - 36px);
+  box-sizing: border-box;
+  max-width: calc(95vw - 44px);
   height: auto;
 }
 
@@ -167,8 +168,11 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
+  width: 100%;
   max-width: 98vw;
+  box-sizing: border-box;
+  padding-left: 44px; /* Компенсируем ширину прогресс-бара справа, чтобы сам стол стоял строго по центру */
 }
 
 .power-bar-container {

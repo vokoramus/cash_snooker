@@ -59,15 +59,29 @@
     font-size: 11px;
   }
 
+  .table-stage {
+    gap: 6px;
+    padding-left: 0; /* На узких экранах убираем левый отступ, чтобы экономить место */
+    width: 98vw;
+    justify-content: center;
+  }
+
   canvas {
-    border-width: 7px;
-    max-width: calc(98vw - 30px);
+    border-width: 6px;
+    box-sizing: border-box;
+    max-width: calc(98vw - 34px); /* Оставляем ровно 34px под отступ и тонкий прогресс-бар */
   }
 
   .power-bar-track {
-    width: 12px;
-    height: 150px;
+    width: 10px;
+    height: 140px;
   }
+
+  .power-bar-label {
+    font-size: 10px;
+    min-width: 24px;
+  }
+
 }
 
 /* Горизонтальный (альбомный) режим смартфона: всё строго в 1 строку */
@@ -183,4 +197,10 @@
     height: 58vh;
     max-height: 170px;
   }
+
+  .table-stage {
+    padding-left: 0;
+    gap: 8px;
+  }
+
 }

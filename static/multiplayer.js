@@ -26,6 +26,24 @@ const Multiplayer = (() => {
     return `${proto}//${host}${basePath}/ws/${encodeURIComponent(room)}`;
   }
 
+  function setBanner(updaterFn, color = '#4fc3f7') {
+    lastBannerUpdater = updaterFn;
+    let banner = document.getElementById('mp-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'mp-banner';
+      banner.style.cssText = 'font-size:13px; margin-bottom:8px; padding:4px 12px; border-radius:6px; background:#262a2e; border:1px solid #37474f; font-weight:600; cursor:pointer;';
+      banner.title = 'Click to copy room link';
+      banner.onclick = () => navigator.clipboard?.writeText(window.location.href).catch(() => {});
+      const statusEl = document.getElementById('status');
+      if (statusEl && statusEl.parentNode) {
+        statusEl.parentNode.insertBefore(banner, statusEl);
+      }
+    }
+    banner.style.color = color;
+    banner.innerText = updaterFn();
+  }
+
   function updateBanner(text, color = '#4fc3f7') {
     let banner = document.getElementById('mp-banner');
     if (!banner) {
@@ -79,7 +97,8 @@ const Multiplayer = (() => {
 
   function handleMessage(msg) {
     if (msg.type === 'room_full') {
-      updateBanner('Комната уже заполнена (2/2). Вы играете локально.', '#ff5252');
+      // updateBanner('Комната уже заполнена (2/2). Вы играете локально.', '#ff5252');
+      setBanner(() => t('mpFull'), '#ff5252');
       ws = null;
       myIndex = null;
       return;
@@ -88,24 +107,30 @@ const Multiplayer = (() => {
     if (msg.type === 'joined') {
       myIndex = msg.playerIndex;
       playersCount = msg.playersCount;
-      const roleText = myIndex === 0 ? 'Вы: Игрок 1' : 'Вы: Игрок 2';
-      const waitText = playersCount < 2 ? 'Ожидание соперника (ссылка скопирована)...' : 'Соперник в комнате!';
-      updateBanner(`🌐 Комната [${roomId}] | ${roleText} | ${waitText}`, '#69f0ae');
+      setBanner(() => {
+        const role = myIndex === 0 ? t('mpRole1') : t('mpRole2');
+        const state = playersCount < 2 ? t('mpWait') : t('mpJoined');
+        return `🌐 ${t('mpRoom')} [${roomId}] | ${role} | ${state}`;
+      }, '#69f0ae');
       if (typeof updateUI === 'function') updateUI();
       return;
     }
 
     if (msg.type === 'room_status') {
       playersCount = msg.playersCount;
-      const roleText = myIndex === 0 ? 'Вы: Игрок 1' : 'Вы: Игрок 2';
       if (playersCount >= 2) {
-        updateBanner(`🌐 Комната [${roomId}] | ${roleText} | Матч идёт!`, '#69f0ae');
-        // Игрок 1 отправляет текущую расстановку стола вошедшему Игроку 2
+        setBanner(() => {
+          const role = myIndex === 0 ? t('mpRole1') : t('mpRole2');
+          return `🌐 ${t('mpRoom')} [${roomId}] | ${role} | ${t('mpPlaying')}`;
+        }, '#69f0ae');
         if (myIndex === 0) {
           send({ type: 'sync_state', snapshot: getFullSnapshot() });
         }
       } else {
-        updateBanner(`🌐 Комната [${roomId}] | ${roleText} | Ожидание соперника...`, '#ffd54f');
+        setBanner(() => {
+          const role = myIndex === 0 ? t('mpRole1') : t('mpRole2');
+          return `🌐 ${t('mpRoom')} [${roomId}] | ${role} | ${t('mpWait')}`;
+        }, '#ffd54f');
       }
       if (typeof updateUI === 'function') updateUI();
       return;
@@ -113,7 +138,10 @@ const Multiplayer = (() => {
 
     if (msg.type === 'player_left') {
       playersCount = 1;
-      updateBanner(`🌐 Комната [${roomId}] | Соперник отключился.`, '#ff5252');
+      setBanner(() => {
+        const role = myIndex === 0 ? t('mpRole1') : t('mpRole2');
+        return `🌐 ${t('mpRoom')} [${roomId}] | ${role} | ${t('mpLeft')}`;
+      }, '#ff5252');
       if (typeof updateUI === 'function') updateUI();
       return;
     }
@@ -176,7 +204,7 @@ const Multiplayer = (() => {
     };
     ws.onclose = () => {
       if (myIndex !== null) {
-        updateBanner('Соединение с сервером потеряно.', '#ff5252');
+        setBanner(() => t('mpLost'), '#ff5252');
       }
     };
   }
@@ -203,9 +231,12 @@ const Multiplayer = (() => {
     // Возвращаем кнопку в исходное состояние
     const btn = document.getElementById('btn-mp');
     if (btn) {
-      btn.innerText = '🌐 Онлайн (1 на 1)';
+      btn.innerText = t('mpOnline');
       btn.style.background = '#1565c0';
     }
+
+    // ...
+    lastBannerUpdater = null;
 
     if (typeof updateUI === 'function') updateUI();
   }
@@ -228,7 +259,7 @@ const Multiplayer = (() => {
 
     const btn = document.getElementById('btn-mp');
     if (btn) {
-      btn.innerText = '✖ Выйти в Single Mode';
+      btn.innerText = t('mpLeave');
       btn.style.background = '#c62828';
     }
   }
@@ -238,7 +269,7 @@ const Multiplayer = (() => {
     if (controls && !document.getElementById('btn-mp')) {
       const btn = document.createElement('button');
       btn.id = 'btn-mp';
-      btn.innerText = '🌐 Онлайн (1 на 1)';
+      btn.innerText = t('mpOnline');
       btn.style.background = '#1565c0';
       btn.onclick = handleMpButtonClick;
       controls.appendChild(btn);
@@ -250,13 +281,24 @@ const Multiplayer = (() => {
       connect(urlRoom);
       const btn = document.getElementById('btn-mp');
       if (btn) {
-        btn.innerText = '✖ Выйти в Single Mode';
+        btn.innerText = t('mpLeave');
         btn.style.background = '#c62828';
       }
     }
   }
 
-  return { initUI, isOnline, isMyTurn, getMyIndex, send, getFullSnapshot };
+  function refreshLang() {
+    const btn = document.getElementById('btn-mp');
+    if (btn) {
+      btn.innerText = (roomId || ws) ? t('mpLeave') : t('mpOnline');
+    }
+    const banner = document.getElementById('mp-banner');
+    if (banner && lastBannerUpdater) {
+      banner.innerText = lastBannerUpdater();
+    }
+  }
+
+  return { initUI, isOnline, isMyTurn, getMyIndex, send, getFullSnapshot, refreshLang };
 })();
 
 if (document.readyState === 'loading') {
