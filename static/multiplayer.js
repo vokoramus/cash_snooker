@@ -57,6 +57,10 @@ const Multiplayer = (() => {
     };
   }
 
+  function getMyIndex() {
+    return myIndex;
+  }
+
   function applySnapshot(snap) {
     if (!snap || !snap.balls) return;
     balls = snap.balls.map(b => ({ ...b }));
@@ -69,6 +73,7 @@ const Multiplayer = (() => {
     respotBonus = snap.respotBonus || Array.of(0, 0);
     isMoving = false;
     isAiming = false;
+    if (playersCount < 2 && isOnline()) playersCount = 2;
     if (typeof updateUI === 'function') updateUI();
   }
 
@@ -226,10 +231,6 @@ const Multiplayer = (() => {
       btn.innerText = '✖ Выйти в Single Mode';
       btn.style.background = '#c62828';
     }
-  }
-
-  function getMyIndex() {
-    return myIndex;
   }
 
   function initUI() {

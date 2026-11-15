@@ -138,6 +138,7 @@ function spawnRedsOnLine(count) {
 }
 
 function handleShotEnd() {
+  const shooterIdx = turn;
   let p = players[turn];
   let foul = false;
   let colorsLeftBefore = hasActiveColors();
