@@ -228,6 +228,10 @@ const Multiplayer = (() => {
     }
   }
 
+  function getMyIndex() {
+    return myIndex;
+  }
+
   function initUI() {
     const controls = document.querySelector('.controls');
     if (controls && !document.getElementById('btn-mp')) {
@@ -251,7 +255,7 @@ const Multiplayer = (() => {
     }
   }
 
-  return { initUI, isOnline, isMyTurn, send, getFullSnapshot };
+  return { initUI, isOnline, isMyTurn, getMyIndex, send, getFullSnapshot };
 })();
 
 if (document.readyState === 'loading') {

@@ -297,7 +297,7 @@ function handleShotEnd() {
 
   updateUI();
 
-  if (typeof Multiplayer !== 'undefined' && Multiplayer.isOnline() && Multiplayer.isMyTurn()) {
+  if (typeof Multiplayer !== 'undefined' && Multiplayer.isOnline() && Multiplayer.getMyIndex() === shooterIdx) {
     Multiplayer.send({ type: 'sync_state', snapshot: Multiplayer.getFullSnapshot() });
   }
 
