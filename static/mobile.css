@@ -87,6 +87,15 @@
     padding: 3px 5px;
     font-size: 10px;
   }
+
+  .rules-label-full {
+    display: none;
+  }
+
+  .rules-label-short {
+    display: inline;
+  }
+
 }
 
 /* Горизонтальный (альбомный) режим смартфона: всё строго в 1 строку */
@@ -212,6 +221,14 @@
     width: 68px;
     padding: 3px 5px;
     font-size: 10px;
+  }
+
+  .rules-label-full {
+    display: none;
+  }
+
+  .rules-label-short {
+    display: inline;
   }
 
 }

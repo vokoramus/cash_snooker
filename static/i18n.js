@@ -157,6 +157,10 @@ function toggleLanguage() {
     Multiplayer.refreshLang();
   }
 
+  if (typeof RulesModal !== 'undefined' && typeof RulesModal.refreshLang === 'function') {
+    RulesModal.refreshLang();
+  }
+
   setGameStatus(lastStatusUpdater);
   if (typeof updateUI === 'function') updateUI();
 
