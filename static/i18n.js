@@ -15,6 +15,8 @@ const I18N = {
     cancel: 'ОТМЕНА',
     newGame: 'Новая партия',
     moveBalls: '🖐 Двигать шары',
+    mpPlaceholder: 'Код комнаты',
+    mpJoin: 'Войти',
 
     mpOnline: '🌐 Онлайн (1 на 1)',
     mpLeave: '✖ Выйти в Single Mode',
@@ -62,6 +64,8 @@ const I18N = {
     cancel: 'CANCEL',
     newGame: 'New Frame',
     moveBalls: '🖐 Move balls',
+    mpPlaceholder: 'Room code',
+    mpJoin: 'Join',
 
     mpOnline: '🌐 Online (1v1)',
     mpLeave: '✖ Exit to Single Mode',

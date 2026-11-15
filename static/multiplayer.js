@@ -209,6 +209,32 @@ const Multiplayer = (() => {
     };
   }
 
+  function toggleJoinControls(inRoom) {
+    const input = document.getElementById('mp-room-input');
+    const joinBtn = document.getElementById('btn-mp-join');
+    const createBtn = document.getElementById('btn-mp');
+
+    if (input) input.style.display = inRoom ? 'none' : 'inline-block';
+    if (joinBtn) joinBtn.style.display = inRoom ? 'none' : 'inline-block';
+    if (createBtn) {
+      createBtn.innerText = inRoom ? t('mpLeave') : t('mpOnline');
+      createBtn.style.background = inRoom ? '#c62828' : '#1565c0';
+    }
+  }
+
+  function joinByCode(rawCode) {
+    const cleanCode = String(rawCode || '').trim().toLowerCase();
+    if (!cleanCode) return;
+
+    roomId = cleanCode;
+    const url = new URL(window.location.href);
+    url.searchParams.set('room', roomId);
+    window.history.replaceState({}, '', url);
+
+    connect(roomId);
+    toggleJoinControls(true);
+  }
+
   function leaveRoom() {
     if (ws) {
       const oldWs = ws;
@@ -218,80 +244,87 @@ const Multiplayer = (() => {
     roomId = null;
     myIndex = null;
     playersCount = 0;
+    lastBannerUpdater = null;
 
-    // Убираем параметр ?room=... из адресной строки
     const url = new URL(window.location.href);
     url.searchParams.delete('room');
     window.history.replaceState({}, '', url);
 
-    // Прячем баннер комнаты
     const banner = document.getElementById('mp-banner');
     if (banner) banner.remove();
 
-    // Возвращаем кнопку в исходное состояние
-    const btn = document.getElementById('btn-mp');
-    if (btn) {
-      btn.innerText = t('mpOnline');
-      btn.style.background = '#1565c0';
-    }
+    const input = document.getElementById('mp-room-input');
+    if (input) input.value = '';
 
-    // ...
-    lastBannerUpdater = null;
+    toggleJoinControls(false);
 
     if (typeof updateUI === 'function') updateUI();
   }
 
   function handleMpButtonClick() {
-    // Если уже в комнате — выходим обратно в Single Mode
     if (roomId || ws) {
       leaveRoom();
       return;
     }
 
-    // Иначе создаём новую комнату
-    roomId = Math.random().toString(36).substring(2, 7);
-    const url = new URL(window.location.href);
-    url.searchParams.set('room', roomId);
-    window.history.replaceState({}, '', url);
-    connect(roomId);
-
+    const newCode = Math.random().toString(36).substring(2, 7);
+    joinByCode(newCode);
     navigator.clipboard?.writeText(window.location.href).catch(() => {});
-
-    const btn = document.getElementById('btn-mp');
-    if (btn) {
-      btn.innerText = t('mpLeave');
-      btn.style.background = '#c62828';
-    }
   }
 
   function initUI() {
     const controls = document.querySelector('.controls');
     if (controls && !document.getElementById('btn-mp')) {
-      const btn = document.createElement('button');
-      btn.id = 'btn-mp';
-      btn.innerText = t('mpOnline');
-      btn.style.background = '#1565c0';
-      btn.onclick = handleMpButtonClick;
-      controls.appendChild(btn);
+      // Кнопка создания комнаты / выхода
+      const createBtn = document.createElement('button');
+      createBtn.id = 'btn-mp';
+      createBtn.innerText = t('mpOnline');
+      createBtn.style.background = '#1565c0';
+      createBtn.onclick = handleMpButtonClick;
+      controls.appendChild(createBtn);
+
+      // Поле ввода кода комнаты
+      const input = document.createElement('input');
+      input.id = 'mp-room-input';
+      input.type = 'text';
+      input.maxLength = 12;
+      input.placeholder = t('mpPlaceholder');
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') joinByCode(input.value);
+      };
+      controls.appendChild(input);
+
+      // Кнопка "Войти"
+      const joinBtn = document.createElement('button');
+      joinBtn.id = 'btn-mp-join';
+      joinBtn.innerText = t('mpJoin');
+      joinBtn.style.background = '#2e7d32';
+      joinBtn.onclick = () => joinByCode(input.value);
+      controls.appendChild(joinBtn);
     }
 
     const params = new URLSearchParams(window.location.search);
     const urlRoom = params.get('room');
-    if (urlRoom) {
-      connect(urlRoom);
-      const btn = document.getElementById('btn-mp');
-      if (btn) {
-        btn.innerText = t('mpLeave');
-        btn.style.background = '#c62828';
-      }
+    if (urlRoom && urlRoom.trim() !== '') {
+      joinByCode(urlRoom);
+    } else {
+      roomId = null;
+      myIndex = null;
+      playersCount = 0;
+      toggleJoinControls(false);
     }
   }
 
   function refreshLang() {
-    const btn = document.getElementById('btn-mp');
-    if (btn) {
-      btn.innerText = (roomId || ws) ? t('mpLeave') : t('mpOnline');
-    }
+    const inRoom = Boolean(roomId || ws);
+    toggleJoinControls(inRoom);
+
+    const input = document.getElementById('mp-room-input');
+    if (input) input.placeholder = t('mpPlaceholder');
+
+    const joinBtn = document.getElementById('btn-mp-join');
+    if (joinBtn) joinBtn.innerText = t('mpJoin');
+
     const banner = document.getElementById('mp-banner');
     if (banner && lastBannerUpdater) {
       banner.innerText = lastBannerUpdater();

@@ -82,6 +82,11 @@
     min-width: 24px;
   }
 
+  #mp-room-input {
+    width: 68px;
+    padding: 3px 5px;
+    font-size: 10px;
+  }
 }
 
 /* Горизонтальный (альбомный) режим смартфона: всё строго в 1 строку */
@@ -201,6 +206,12 @@
   .table-stage {
     padding-left: 0;
     gap: 8px;
+  }
+
+  #mp-room-input {
+    width: 68px;
+    padding: 3px 5px;
+    font-size: 10px;
   }
 
 }
