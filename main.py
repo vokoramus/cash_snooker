@@ -9,10 +9,6 @@ app = FastAPI(title="Cash Snooker Server")
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 
-"""запуск локально:
-uvicorn main:app --reload --port 8001
-"""
-
 
 class RoomManager:
     def __init__(self) -> None:
@@ -62,8 +58,7 @@ class RoomManager:
 manager = RoomManager()
 
 
-@app.websocket("/ws/{room_id}")
-async def websocket_endpoint(websocket: WebSocket, room_id: str) -> None:
+async def handle_ws(websocket: WebSocket, room_id: str) -> None:
     clean_room = room_id.strip().lower() or "default"
     player_idx = await manager.connect(clean_room, websocket)
     if player_idx == -1:
@@ -79,9 +74,22 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str) -> None:
         await manager.broadcast(clean_room, {"type": "player_left"})
 
 
+@app.websocket("/ws/{room_id}")
+async def websocket_root(websocket: WebSocket, room_id: str) -> None:
+    await handle_ws(websocket, room_id)
+
+
+@app.websocket("/cash-snooker/ws/{room_id}")
+async def websocket_prefixed(websocket: WebSocket, room_id: str) -> None:
+    await handle_ws(websocket, room_id)
+
+
 @app.get("/")
+@app.get("/cash-snooker")
+@app.get("/cash-snooker/")
 async def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
-app.mount("/", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/cash-snooker", StaticFiles(directory=STATIC_DIR), name="static_prefixed")
+app.mount("/", StaticFiles(directory=STATIC_DIR), name="static_root")
