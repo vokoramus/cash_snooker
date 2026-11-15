@@ -96,13 +96,45 @@ function updateUI() {
     let rDiv = document.getElementById(`p${i + 1}-reds`);
     rDiv.innerHTML = '';
     for (let k = 0; k < players[i].reds; k++) {
-      rDiv.innerHTML += `<span class="dot" style="background:#d32f2f"></span>`;
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = '#d32f2f';
+      dot.title = '+1';
+      dot.ondblclick = (e) => {
+        if ((!e.ctrlKey && !e.metaKey) || isMoving) return;
+        if (players[i].reds > 0) {
+          players[i].reds--;
+          spawnRedsOnLine(1);
+          updateUI();
+          if (typeof Multiplayer !== 'undefined' && Multiplayer.isOnline()) {
+            Multiplayer.send({ type: 'sync_state', snapshot: Multiplayer.getFullSnapshot() });
+          }
+        }
+      };
+      rDiv.appendChild(dot);
     }
 
     let cDiv = document.getElementById(`p${i + 1}-colors`);
     cDiv.innerHTML = '';
     players[i].colors.forEach(c => {
-      cDiv.innerHTML += `<span class="dot" style="background:${c.hex}" title="+${c.val * 2}"></span>`;
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = c.hex;
+      dot.title = `+${c.val * 2}`;
+      dot.ondblclick = (e) => {
+        if ((!e.ctrlKey && !e.metaKey) || isMoving) return;
+        players[i].colors = players[i].colors.filter(item => item !== c);
+        c.active = true;
+        c.x = COLORS_DATA[c.type].x;
+        c.y = COLORS_DATA[c.type].y;
+        c.vx = 0;
+        c.vy = 0;
+        updateUI();
+        if (typeof Multiplayer !== 'undefined' && Multiplayer.isOnline()) {
+          Multiplayer.send({ type: 'sync_state', snapshot: Multiplayer.getFullSnapshot() });
+        }
+      };
+      cDiv.appendChild(dot);
     });
 
     document.getElementById(`p${i + 1}-box`).className = `player-box ${turn === i ? 'active-turn' : ''}`;
@@ -693,10 +725,66 @@ function ensureLangButton() {
 }
 
 canvas.addEventListener('mousedown', onPointerDown);
+
+// Чит-хак для тестов: Ctrl + двойной клик по шару на столе -> убрать на полку активного игрока
+canvas.addEventListener('dblclick', (e) => {
+  if (!e.ctrlKey && !e.metaKey) return;
+  if (isMoving) return;
+
+  const pos = getPointerPos(e);
+  let target = null;
+  let minDist = R + 10;
+
+  for (let b of balls) {
+    if (!b.active || b.type === 'cue') continue;
+    const d = Math.hypot(pos.x - b.x, pos.y - b.y);
+    if (d < minDist) {
+      minDist = d;
+      target = b;
+    }
+  }
+
+  if (!target) return;
+
+  const p = players[turn];
+  target.active = false;
+  target.vx = 0;
+  target.vy = 0;
+
+  if (target.type === 'red') {
+    if (p.debt > 0) {
+      p.debt--;
+      spawnRedsOnLine(1);
+    } else if (hasActiveColors() && p.reds >= 8) {
+      spawnRedsOnLine(1);
+    } else {
+      p.reds++;
+    }
+  } else {
+    p.colors.push(target);
+    if (boughtColor === target.type) boughtColor = null;
+  }
+
+  updateUI();
+
+  // Проверяем, не наступила ли досрочная победа после снятия шара
+  if (typeof checkEarlyWin === 'function') {
+    const early = checkEarlyWin();
+    if (early) {
+      setGameStatus(() => t('statusEarlyWin', early.s0, early.s1, early.winnerIdx + 1));
+    }
+  }
+
+  if (typeof Multiplayer !== 'undefined' && Multiplayer.isOnline()) {
+    Multiplayer.send({ type: 'sync_state', snapshot: Multiplayer.getFullSnapshot() });
+  }
+});
+
 canvas.addEventListener('contextmenu', e => {
   e.preventDefault();
   if (isAiming) cancelAim();
 });
+
 window.addEventListener('mousemove', onPointerMove);
 window.addEventListener('mouseup', onPointerUp);
 window.addEventListener('keydown', e => {

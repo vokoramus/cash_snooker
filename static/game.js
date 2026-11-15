@@ -159,6 +159,12 @@ function spawnRedsOnLine(count) {
   }
 }
 
+function syncShotState(shooterIdx) {
+  if (typeof Multiplayer !== 'undefined' && Multiplayer.isOnline() && Multiplayer.getMyIndex() === shooterIdx) {
+    Multiplayer.send({ type: 'sync_state', snapshot: Multiplayer.getFullSnapshot() });
+  }
+}
+
 function handleShotEnd() {
   const shooterIdx = turn;
   let p = players[turn];
@@ -179,6 +185,7 @@ function handleShotEnd() {
       respotBonus[winnerIdx] = 1;
       setGameStatus(() => t('statusRespotFoul', getScore(0), getScore(1), winnerIdx + 1));
       updateUI();
+      syncShotState(shooterIdx);
       return;
     }
 
@@ -187,12 +194,15 @@ function handleShotEnd() {
       respotBonus[turn] = 1;
       setGameStatus(() => t('statusRespotPot', getScore(0), getScore(1), turn + 1));
       updateUI();
+      syncShotState(shooterIdx);
       return;
     }
+
     // Промах на Re-spot Red
     turn = 1 - turn;
     setGameStatus(() => t('statusRespotMiss', turn + 1));
     updateUI();
+    syncShotState(shooterIdx);
     return;
   }
 
@@ -301,11 +311,12 @@ function handleShotEnd() {
       turn = 1 - turn;
       setGameStatus(() => t('statusTie', turn + 1));
       updateUI();
+      syncShotState(shooterIdx);
       return;
     } else {
-      let winner = s1 > s2 ? "Игрок 1" : "Игрок 2";
       setGameStatus(() => t('statusWin', s1, s2, s1 > s2 ? 1 : 2));
       updateUI();
+      syncShotState(shooterIdx);
       return;
     }
   }
@@ -315,9 +326,7 @@ function handleShotEnd() {
   if (earlyResult) {
     setGameStatus(() => t('statusEarlyWin', earlyResult.s0, earlyResult.s1, earlyResult.winnerIdx + 1));
     updateUI();
-    if (typeof Multiplayer !== 'undefined' && Multiplayer.isOnline() && Multiplayer.getMyIndex() === shooterIdx) {
-      Multiplayer.send({ type: 'sync_state', snapshot: Multiplayer.getFullSnapshot() });
-    }
+    syncShotState(shooterIdx)
     return;
   }
 
@@ -330,9 +339,5 @@ function handleShotEnd() {
   }
 
   updateUI();
-
-  if (typeof Multiplayer !== 'undefined' && Multiplayer.isOnline() && Multiplayer.getMyIndex() === shooterIdx) {
-    Multiplayer.send({ type: 'sync_state', snapshot: Multiplayer.getFullSnapshot() });
-  }
-
+  syncShotState(shooterIdx)
 }
