@@ -3,6 +3,7 @@ const Multiplayer = (() => {
   let roomId = null;
   let myIndex = null; // 0 = Игрок 1, 1 = Игрок 2, null = локальный режим
   let playersCount = 0;
+  let spectatorsCount = 0;
 
   function isOnline() {
     return ws !== null && ws.readyState === WebSocket.OPEN && myIndex !== null;
@@ -10,7 +11,13 @@ const Multiplayer = (() => {
 
   function isMyTurn() {
     if (!isOnline()) return true;
+    // Зритель (myIndex === -1) никогда не ходит
+    if (myIndex !== 0 && myIndex !== 1) return false;
     return turn === myIndex && playersCount >= 2;
+  }
+
+  function isSpectator() {
+    return isOnline() && myIndex === -1;
   }
 
   function send(payload) {
@@ -104,47 +111,48 @@ const Multiplayer = (() => {
       return;
     }
 
+    function getRoleLabel() {
+      if (myIndex === 0) return t('mpRole1');
+      if (myIndex === 1) return t('mpRole2');
+      return t('mpRoleSpectator');
+    }
+
     if (msg.type === 'joined') {
       myIndex = msg.playerIndex;
       playersCount = msg.playersCount;
+      spectatorsCount = msg.spectatorsCount || 0;
       setBanner(() => {
-        const role = myIndex === 0 ? t('mpRole1') : t('mpRole2');
-        const state = playersCount < 2 ? t('mpWait') : t('mpJoined');
-        return `🌐 ${t('mpRoom')} [${roomId}] | ${role} | ${state}`;
-      }, '#69f0ae');
+        const state = playersCount < 2 ? t('mpWait') : t('mpPlaying');
+        return `🌐 ${t('mpRoom')} [${roomId}] | ${getRoleLabel()} | ${state}${t('mpSpectators', spectatorsCount)}`;
+      }, myIndex === -1 ? '#4fc3f7' : '#69f0ae');
       if (typeof updateUI === 'function') updateUI();
       return;
     }
 
     if (msg.type === 'room_status') {
       playersCount = msg.playersCount;
+      spectatorsCount = msg.spectatorsCount || 0;
       if (playersCount >= 2) {
-        setBanner(() => {
-          const role = myIndex === 0 ? t('mpRole1') : t('mpRole2');
-          return `🌐 ${t('mpRoom')} [${roomId}] | ${role} | ${t('mpPlaying')}`;
-        }, '#69f0ae');
+        setBanner(() => `🌐 ${t('mpRoom')} [${roomId}] | ${getRoleLabel()} | ${t('mpPlaying')}${t('mpSpectators', spectatorsCount)}`, myIndex === -1 ? '#4fc3f7' : '#69f0ae');
+        // Хост (Игрок 1) отправляет слепок стола при входе Игрока 2 или нового зрителя
         if (myIndex === 0) {
           send({ type: 'sync_state', snapshot: getFullSnapshot() });
         }
       } else {
-        setBanner(() => {
-          const role = myIndex === 0 ? t('mpRole1') : t('mpRole2');
-          return `🌐 ${t('mpRoom')} [${roomId}] | ${role} | ${t('mpWait')}`;
-        }, '#ffd54f');
+        setBanner(() => `🌐 ${t('mpRoom')} [${roomId}] | ${getRoleLabel()} | ${t('mpWait')}${t('mpSpectators', spectatorsCount)}`, '#ffd54f');
       }
       if (typeof updateUI === 'function') updateUI();
       return;
     }
 
     if (msg.type === 'player_left') {
-      playersCount = 1;
-      setBanner(() => {
-        const role = myIndex === 0 ? t('mpRole1') : t('mpRole2');
-        return `🌐 ${t('mpRoom')} [${roomId}] | ${role} | ${t('mpLeft')}`;
-      }, '#ff5252');
+      playersCount = msg.playersCount ?? 1;
+      spectatorsCount = msg.spectatorsCount || 0;
+      setBanner(() => `🌐 ${t('mpRoom')} [${roomId}] | ${getRoleLabel()} | ${t('mpLeft')}${t('mpSpectators', spectatorsCount)}`, '#ff5252');
       if (typeof updateUI === 'function') updateUI();
       return;
     }
+
 
     if (msg.type === 'sync_state') {
       applySnapshot(msg.snapshot);

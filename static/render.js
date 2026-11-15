@@ -150,6 +150,12 @@ function updateUI() {
 
     btn.disabled = isMoving || notMyTurn || lockedByOtherChoice || !ballActive || curP.reds < COLORS_DATA[key].val;
   }
+
+  const resetBtn = document.querySelector('button[onclick="resetGame()"]');
+  if (resetBtn) {
+    resetBtn.disabled = typeof Multiplayer !== 'undefined' && Multiplayer.isOnline() && Multiplayer.getMyIndex() === -1;
+  }
+
 }
 
 function traceAim(cue, angle) {

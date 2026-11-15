@@ -29,6 +29,8 @@ const I18N = {
     mpLeft: 'Соперник отключился.',
     mpFull: 'Комната уже заполнена (2/2). Вы играете локально.',
     mpLost: 'Соединение с сервером потеряно.',
+    mpRoleSpectator: 'Вы: Зритель 👁',
+    mpSpectators: (n) => n > 0 ? ` | 👁 ${n}` : '',
 
     colors: {
       yellow: 'Жёлт.',
@@ -78,6 +80,8 @@ const I18N = {
     mpLeft: 'Opponent disconnected.',
     mpFull: 'Room is full (2/2). Playing locally.',
     mpLost: 'Connection to server lost.',
+    mpRoleSpectator: 'You: Spectator 👁',
+    mpSpectators: (n) => n > 0 ? ` | 👁 ${n}` : '',
 
     colors: {
       yellow: 'Yellow',
